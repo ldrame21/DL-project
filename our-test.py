@@ -36,16 +36,13 @@ if __name__ == '__main__':
     val_target = val_target.float() / 255.0
 
     output_psnr_before = compute_psnr(val_input, val_target)
+    print(f"[PSNR before: {output_psnr_before:.2f} dB]")
 
     model.train(train_input0, train_input1, verbose)
 
     mini_batch_size = 100
-    model_outputs = []
-    for b in tqdm(range(0, val_input.size(0), mini_batch_size)):
-            output = model.predict(val_input.narrow(0, b, mini_batch_size))
-            model_outputs.append(output.cpu())
-    model_outputs = torch.cat(model_outputs, dim=0)
+    model_outputs = model.predict(val_input)
 
     output_psnr_after = compute_psnr(model_outputs, val_target)
-
-    print('yes')
+    
+    print(f"[PSNR: {output_psnr_after:.2f} dB]")
