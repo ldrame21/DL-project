@@ -36,13 +36,18 @@ class Model(torch.nn.Module):
         x_decoded = self.decoder(x_encoded)
         return x_decoded
 
-    def load_pretrained_model(self, SAVE_PATH='./data/saved_model.pth'):
+    def load_pretrained_model(self, SAVE_PATH ='./data/save.pth'):
         ## This loads the parameters saved in bestmodel.pth into the model
-        self.load_state_dict(torch.load(SAVE_PATH))
+        if torch.cuda.is_available():
+            print('if')
+            self.load_state_dict(torch.load(SAVE_PATH))
+        else: 
+            print('else')
+            self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
         
 
 
-    def train(self, train_input, train_target, SAVE_PATH='./data/saved_model.pth', verbose=0):
+    def train(self, train_input, train_target, SAVE_PATH=None, verbose=0):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
 
@@ -56,6 +61,7 @@ class Model(torch.nn.Module):
         #training_dataset = torch.utils.data.TensorDataset(train_input, train_target)
         #Batching the data
         #training_generator = torch.utils.data.DataLoader(dataset=training_dataset, batch_size=10, shuffle=True)     
+        train_loss = []
 
         for e in range(nb_epochs):
             acc_loss = 0
@@ -67,10 +73,23 @@ class Model(torch.nn.Module):
                 self.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-            
-            if(verbose): print(e, acc_loss)
-        
-        torch.save(self.state_dict(), SAVE_PATH)
+            #for plotting the loss
+            train_loss.append(acc_loss)
+
+            if verbose: print(e, acc_loss)
+
+        #Saving the model
+        if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
+
+        #If verbose mode is active, we return the loss for plotting
+        if verbose: 
+            plt.figure(figsize=(8,6))
+            plt.plot(train_loss, 'r')
+            plt.title('Training loss')
+            plt.xlabel('Epoch')
+            plt.ylabel('Loss')
+            return train_loss
+
 
     def predict(self, test_input):
         #:test_input: tensor of size (N1, C, H, W) that has to be denoised by the trained or the loaded network.
