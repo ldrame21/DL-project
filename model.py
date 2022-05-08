@@ -7,24 +7,24 @@ from torch import nn
 nb_epochs=10
 mini_batch_size=100
 
-class Model():
+class Model(torch.nn.Module):
     def __init__(self):
         ## instantiate model + optimizer + loss function + any other stuff you need 
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 48, kernel_size = 3, padding='same'),
+            nn.Conv2d(3, 48, kernel_size = 3, padding=3//2),
             nn.ReLU(),
-            nn.Conv2d(48, 48, kernel_size = 3, padding='same'), 
+            nn.Conv2d(48, 48, kernel_size = 3, padding=3//2), 
             nn.ReLU(),
             nn.MaxPool2d(2)
         )
 
         self.decoder = nn.Sequential(
-            nn.UpsamplingNearest2d(2),
+            nn.UpsamplingNearest2d(32),
             nn.ReLU(),
-            nn.ConvTranspose2d(48, 48, kernel_size = 3, padding='same'),
+            nn.ConvTranspose2d(48, 48, kernel_size = 3, padding=3//2),
             nn.ReLU(),
-            nn.ConvTranspose2d(48, 3, kernel_size = 3, padding='same')
+            nn.ConvTranspose2d(48, 3, kernel_size = 3, padding=3//2)
         )
 
         self.optimizer = optim.Adam(self.parameters(), lr=0.001)
@@ -39,7 +39,7 @@ class Model():
         ## This loads the parameters saved in bestmodel.pth into the model 
         pass
 
-    def train(self, train_input, train_target,verbose=0):
+    def train(self, train_input, train_target, verbose=0):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
 
@@ -47,7 +47,7 @@ class Model():
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.to(device)
         self.criterion.to(device)
-        train_input, train_targets = train_input.to(device), train_targets.to(device)
+        train_input, train_target = train_input.to(device), train_target.to(device)
 
         #creating the dataset
         training_dataset = torch.utils.data.TensorDataset(train_input, train_target)
@@ -70,4 +70,4 @@ class Model():
     def predict(self, test_input):
         #:test_input: tensor of size (N1, C, H, W) that has to be denoised by the trained or the loaded network.
         #: returns a tensor of the size (N1, C, H, W)
-        pass        
+        return self(test_input)
