@@ -5,7 +5,6 @@ from torch import Tensor
 from torch import nn
 import matplotlib.pyplot as plt
 
-nb_epochs=10
 mini_batch_size=100
 
 class Model(torch.nn.Module):
@@ -47,7 +46,7 @@ class Model(torch.nn.Module):
         
 
 
-    def train(self, train_input, train_target, SAVE_PATH=None, verbose=0):
+    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH=None,):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
 
@@ -79,12 +78,12 @@ class Model(torch.nn.Module):
             if verbose: print(e, acc_loss)
 
         #Saving the model
-        if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
+        #if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
 
         #If verbose mode is active, we return the loss for plotting
         if verbose: 
             plt.figure(figsize=(8,6))
-            plt.plot(train_loss, 'r')
+            plt.plot(train_loss, '-o')
             plt.title('Training loss')
             plt.xlabel('Epoch')
             plt.ylabel('Loss')
