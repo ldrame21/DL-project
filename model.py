@@ -36,11 +36,13 @@ class Model(torch.nn.Module):
         x_decoded = self.decoder(x_encoded)
         return x_decoded
 
-    def load_pretrained_model(self):
-        ## This loads the parameters saved in bestmodel.pth into the model 
-        pass
+    def load_pretrained_model(self, SAVE_PATH='./data/saved_model.pth'):
+        ## This loads the parameters saved in bestmodel.pth into the model
+        self.load_state_dict(torch.load(SAVE_PATH))
+        
 
-    def train(self, train_input, train_target, verbose=0):
+
+    def train(self, train_input, train_target, SAVE_PATH='./data/saved_model.pth', verbose=0):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
 
@@ -67,6 +69,8 @@ class Model(torch.nn.Module):
                 self.optimizer.step()
             
             if(verbose): print(e, acc_loss)
+        
+        torch.save(self.state_dict(), SAVE_PATH)
 
     def predict(self, test_input):
         #:test_input: tensor of size (N1, C, H, W) that has to be denoised by the trained or the loaded network.
@@ -82,3 +86,4 @@ class Model(torch.nn.Module):
              # Calculating the loss function
             loss = self.criterion(output, test_input.narrow(0, b, mini_batch_size))
         model_outputs = torch.cat(model_outputs, dim=0)
+        return model_outputs
