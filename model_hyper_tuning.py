@@ -102,11 +102,11 @@ class Model(torch.nn.Module):
                     acc_loss_val = acc_loss_val + loss.item()
                     
             #for plotting the loss
-            train_loss.append(acc_loss_train)
-            val_loss.append(acc_loss_val)
+            train_loss.append(acc_loss_train/len(train_subset))
+            val_loss.append(acc_loss_val/len(val_subset))
 
 
-            if verbose: print(f'Epoch #{e}: Training loss = {acc_loss_train} ----- Validation loss = {acc_loss_val} ')
+            if verbose: print(f'Epoch #{e}: Training loss = {acc_loss_train/len(train_subset)} ----- Validation loss = {acc_loss_val/len(val_subset)} ')
 
         #Saving the model
         #if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
