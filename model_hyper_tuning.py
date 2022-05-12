@@ -90,8 +90,21 @@ class Model(torch.nn.Module):
                 self.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+
+            for i, data in enumerate(val_loader, 0):
+                #No need for gradient calculation:
+                with torch.no_grad():
+                    val_input, val_target = data
+                    val_input, val_target = val_input.to(device), val_target.to(device)
+
+                    output = self.forward(val_input)
+                    loss = self.criterion(output, val_target)
+                    acc_loss_val = acc_loss_val + loss.item()
+                    
             #for plotting the loss
             train_loss.append(acc_loss_train)
+            val_loss.append(acc_loss_val)
+
 
             if verbose: print(f'Epoch #{e}: Training loss = {acc_loss_train} ----- Validation loss = {acc_loss_val} ')
 
@@ -102,10 +115,12 @@ class Model(torch.nn.Module):
         if verbose: 
             plt.figure(figsize=(8,6))
             plt.plot(train_loss, '-o')
-            plt.title('Training loss')
+            plt.plot(val_loss, '-o')
+            plt.title('Training and validation losses')
             plt.xlabel('Epoch')
             plt.ylabel('Loss')
-            return train_loss
+            plt.legend(['Training loss', 'Validation loss'])
+            return train_loss, 
 
 
     def predict(self, test_input):
