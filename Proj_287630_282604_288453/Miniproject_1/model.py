@@ -28,7 +28,7 @@ class Model(torch.nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=0.001, weight_decay = 1e-8)
         self.criterion = nn.MSELoss()
 
-        #move the model, criterion & data to the device (CPU or GPU)
+        #move the model & criterion to the device (CPU or GPU)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.to(device)
         self.criterion.to(device)
@@ -49,6 +49,8 @@ class Model(torch.nn.Module):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
 
+        #move data to the device (CPU or GPU)
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         train_input, train_target = train_input.to(device), train_target.to(device)
 
         #creating the dataset
