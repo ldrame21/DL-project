@@ -28,6 +28,11 @@ class Model(torch.nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=0.001, weight_decay = 1e-8)
         self.criterion = nn.MSELoss()
 
+        #move the model, criterion & data to the device (CPU or GPU)
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.to(device)
+        self.criterion.to(device)
+
     def forward(self, x):
         x_encoded = self.encoder(x)
         x_decoded = self.decoder(x_encoded)
@@ -44,10 +49,6 @@ class Model(torch.nn.Module):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
 
-        #move the model, criterion & data to the device (CPU or GPU)
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.to(device)
-        self.criterion.to(device)
         train_input, train_target = train_input.to(device), train_target.to(device)
 
         #creating the dataset
@@ -89,8 +90,7 @@ class Model(torch.nn.Module):
         #: returns a tensor of the size (N1, C, H, W)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         test_input = test_input.to(device)
-        self.to(device)
-        
+
         losses = []
         model_outputs = []
         for b in range(0, test_input.size(0), mini_batch_size):
