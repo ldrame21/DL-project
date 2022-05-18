@@ -41,7 +41,7 @@ class Model(torch.nn.Module):
     def load_pretrained_model(self, SAVE_PATH ='Proj_287630_282604_288453/Miniproject_1/bestmodel.pth'):
         ## This loads the parameters saved in bestmodel.pth into the model
         if torch.cuda.is_available():
-            self.load_state_dict(torch.load(SAVE_PATH), map_location=torch.device('cuda'))
+            self.load_state_dict(torch.load(SAVE_PATH))
         else: 
             self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
         
