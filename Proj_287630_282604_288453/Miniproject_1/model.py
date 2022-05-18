@@ -40,7 +40,7 @@ class Model(torch.nn.Module):
         else: 
             self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
         
-    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='./bestmodel.pth',mini_batch_size=100):
+    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='Proj_287630_282604_288453/Miniproject_1/bestmodel.pth',mini_batch_size=100):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
 
@@ -89,6 +89,7 @@ class Model(torch.nn.Module):
         #: returns a tensor of the size (N1, C, H, W)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         test_input = test_input.to(device)
+        self.to(device)
         
         losses = []
         model_outputs = []
