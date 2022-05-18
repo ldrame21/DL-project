@@ -5,8 +5,6 @@ from torch import Tensor
 from torch import nn
 import matplotlib.pyplot as plt
 
-mini_batch_size=100
-
 class Model(torch.nn.Module):
     def __init__(self):
         ## instantiate model + optimizer + loss function + any other stuff you need 
@@ -20,7 +18,7 @@ class Model(torch.nn.Module):
         )
 
         self.decoder = nn.Sequential(
-            nn.UpsamplingNearest2d(32),
+            nn.UpsamplingNearest2d(scale_factor=2),
             nn.ReLU(),
             nn.ConvTranspose2d(48, 48, kernel_size = 3, padding=3//2),
             nn.ReLU(),
@@ -35,18 +33,14 @@ class Model(torch.nn.Module):
         x_decoded = self.decoder(x_encoded)
         return x_decoded
 
-    def load_pretrained_model(self, SAVE_PATH ='./bestmodel.pth'):
+    def load_pretrained_model(self, SAVE_PATH ='Proj_287630_282604_288453/Miniproject_1/bestmodel.pth'):
         ## This loads the parameters saved in bestmodel.pth into the model
         if torch.cuda.is_available():
-            print('if')
             self.load_state_dict(torch.load(SAVE_PATH))
         else: 
-            print('else')
             self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
         
-
-
-    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='./bestmodel.pth',):
+    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='./bestmodel.pth',mini_batch_size=100):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
 
@@ -90,7 +84,7 @@ class Model(torch.nn.Module):
             return train_loss
 
 
-    def predict(self, test_input):
+    def predict(self, test_input, mini_batch_size=1):
         #:test_input: tensor of size (N1, C, H, W) that has to be denoised by the trained or the loaded network.
         #: returns a tensor of the size (N1, C, H, W)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -101,7 +95,5 @@ class Model(torch.nn.Module):
         for b in range(0, test_input.size(0), mini_batch_size):
             output = self(test_input.narrow(0, b, mini_batch_size))
             model_outputs.append(output.cpu())
-             # Calculating the loss function
-            loss = self.criterion(output, test_input.narrow(0, b, mini_batch_size))
         model_outputs = torch.cat(model_outputs, dim=0)
         return model_outputs
