@@ -5,7 +5,7 @@ from torch import Tensor
 from torch import nn
 import matplotlib.pyplot as plt
 
-mini_batch_size=100
+mini_batch_size=1
 
 class Model(torch.nn.Module):
     def __init__(self):
@@ -20,7 +20,7 @@ class Model(torch.nn.Module):
         )
 
         self.decoder = nn.Sequential(
-            nn.UpsamplingNearest2d(32),
+            nn.UpsamplingNearest2d(scale_factor=2),
             nn.ReLU(),
             nn.ConvTranspose2d(48, 48, kernel_size = 3, padding=3//2),
             nn.ReLU(),
@@ -101,7 +101,6 @@ class Model(torch.nn.Module):
         for b in range(0, test_input.size(0), mini_batch_size):
             output = self(test_input.narrow(0, b, mini_batch_size))
             model_outputs.append(output.cpu())
-             # Calculating the loss function
-            loss = self.criterion(output, test_input.narrow(0, b, mini_batch_size))
+            # Calculating the loss function
         model_outputs = torch.cat(model_outputs, dim=0)
         return model_outputs
