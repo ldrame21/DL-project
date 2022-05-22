@@ -5,6 +5,7 @@ from torch import Tensor
 from torch import nn
 import matplotlib.pyplot as plt
 
+import __init__
 class Model(torch.nn.Module):
     def __init__(self):
         ## instantiate model + optimizer + loss function + any other stuff you need 
