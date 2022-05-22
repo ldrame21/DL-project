@@ -1,6 +1,6 @@
 from torch import FloatTensor
-from math import tanh
-from others.module import Module
+from module import Module
+
 '''
 class MSE(Module):
     def __init__(self, input_size):
