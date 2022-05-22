@@ -1,8 +1,9 @@
 import torch
 import __init__
 
-
 class MSE(input):
+    def __init__(self):
+        pass 
     def forward(self, input, target):
         self.input = input #general output y of the network
         self.target = target
@@ -14,6 +15,8 @@ class MSE(input):
         return []
 
 class ReLU(input):
+    def __init__(self):
+        pass 
     def forward(self, input):
         self.input = input
         return torch.maximum(input, 0) 
@@ -26,6 +29,8 @@ class ReLU(input):
         return []
         
 class Sigmoid(input):
+    def __init__(self):
+        pass 
     def forward(self, input):
         self.output = 1 / (1 + torch.exp(-input))
         return self.output
@@ -35,6 +40,8 @@ class Sigmoid(input):
         return []
 
 class NearestUpsampling(input):
+    def __init__(self):
+        pass 
     def forward(self, input):
         raise NotImplementedError
     def backward(self, gradwrtoutput):
@@ -43,6 +50,8 @@ class NearestUpsampling(input):
         return []
 
 class SGD(input):
+    def __init__(self):
+        pass 
     def forward(self, input):
         raise NotImplementedError
     def backward(self, gradwrtoutput):
@@ -51,6 +60,8 @@ class SGD(input):
         return []
 
 class Sequential(input):
+    def __init__(self):
+        pass 
     def forward(self, input):
         raise NotImplementedError
     def backward(self, gradwrtoutput):
