@@ -1,6 +1,6 @@
-from torch import FloatTensor
+from torch import FloatTensor, random
 from math import tanh
-from Proj_287630_282604_288453.Miniproject_2.module import Module
+from Proj_287630_282604_288453.Miniproject_2.others.module import Module
 
 ######## Loss ########
 
@@ -118,15 +118,18 @@ class Sigmoid(Module):
 
 
 ######## Optimizer: Stochastiuc Gradient Descent ########
-class SGD(Module):
-    def __init__(learn_rate=0.1, batch_size=1, n_iter=50, tolerance=1e-06, random_state=None):
-        pass 
-    def forward(self, input):
-        #gradient, x, y, start, 
-        raise NotImplementedError
-    def backward(self, gradwrtoutput):
-        raise NotImplementedError
+class SGD():
+    def __init__(learning_rate=0.1, batch_size=1, random_state=None):
+        # paramètre nb_epoch ?
+        # tolerance?
+        self.learning_rate = learning_rate
+        self.batch_size = batch_size
+        random.seed()
+        
     def param(self):
+        """
+        :return:
+        """
         return []
 
 
@@ -143,25 +146,60 @@ class NearestUpsampling(Module):
     def param(self):
         return []
 '''
-'''
-YUCEF
-'''
+class Conv2d(object):
+    def __init__(self, channels_in, channels_out, kernel_size, input_shape=None): 
+        self.weight = torch.rand(channels_in,channels_out,kernel_size,kernel_size) 
+        self.bias = torch.rand(kernel_size)
+        self.kernel_size = kernel_size
+        self.out_channels = channels_out
+        self.in_channels = channels_in
+
+    def forward (self, input): 
+        self.input = input[0]
+        #input shape 
+        self.input_shape = self.input.size()
+        #output of convolution as a matrix product
+        #print(self.kernel_size[0])
+        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size)
+        print((self.weight.view(self.out_channels,-1) @ unfolded).size())
+        print(self.bias.view(1,-1,1).size())
+        wxb = self.weight.view(self.out_channels,-1) @ unfolded + self.bias.view(1,-1,1)
+        self.output = wxb.view(1,self.out_channels, self.input_shape[2] - self.kernel_size+1, self.input_shape[3] -self.kernel_size+1)
+        return self.output
+
+    def backward (self, *gradwrtoutput, learning_rate):
+        #unfolded = torch.nn.functional.unfold(input,kernel_size=self.kernel_size)
+        #weight_gradient = torch.dot()
+        # bias gradient is the input_gradient. 
+        pass
+
+    def __call__(self,*input):
+        self.forward(input)
+        print(input)
+        return self.output
+
+    def param(self):
+        return[]
 
 ######## Container ########
+
 '''
 class Sequential(input):
     def __init__(self, loss, input_size):
         """
-        :param loss: class instance object with methods compute_loss and compute_grad (cf. losses.py)
+        :param loss: class instance with methods compute_loss and compute_grad (in our case always MSE())
         :param input_size: size of input samples of the network
         """
-        self.loss = loss
         self.input_size = input_size
-        self.layers = []
+        self.loss = loss
+        self.layers = [] # empty until the layers of the network are given
+   
     def forward(self, input):
         raise NotImplementedError
+
     def backward(self, gradwrtoutput):
         raise NotImplementedError
+
     def param(self):
         return []
 '''
