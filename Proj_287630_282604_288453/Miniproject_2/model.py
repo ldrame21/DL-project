@@ -22,53 +22,74 @@ class MSE(Module):
 class ReLU(Module):
     def __init__(self, input_size):
         """
-        :param input_size: input size of the activation layer or output size
+        :param input_size: input size of the activation layer (equivalent to output size in activation layers)
         """
         self.hidden_size = input_size
         self.input = FloatTensor(input_size)
         self.output = FloatTensor(input_size)
-        self.grad_wrt_input = FloatTensor(input_size)
+        self.gradwrtinput = FloatTensor(input_size)
 
     def forward(self, input):
         """
         Forward pass.
-        :param input:
-        :return: 
+        :param input: tensor of hidden size
+        :return: tensor of hidden_size shape containing the element-wise ReLU of the input tensor
         """
         self.input = input
-        return self.input.maximum(input, 0) 
+        self.output = self.input.maximum(input, 0) 
+        return self.output
+
     def backward(self, gradwrtoutput):
         """
         Backward pass.
-        :param gradwrtoutput:
-        :return: 
+        :param gradwrtoutput: tensor of hidden_size shape representing the gradient with respect to the ouput of the layer
+        :return: tensor of hidden_size shape representing the gradient with respect to the input of the layer
         """
         deriv = self.input
         deriv[deriv<=0] = 0
         deriv[deriv>0] = 1
-        return gradwrtoutput*deriv
+        self.gradwrtinput = gradwrtoutput*deriv
+        return self.gradwrtinput
+
     def param(self):
         """
-        :return: empty list since the activation layers have not parameters
+        :return: empty list since the activation layers have no parameters
         """
         return []
         
 class Sigmoid(Module):
-     def __init__(self, input_size):
-            """
+    def __init__(self, input_size):
+        """
         :param input_size: input size of the activation layer or output size
         """
         self.hidden_size = input_size
         self.input = FloatTensor(input_size)
         self.output = FloatTensor(input_size)
-        self.grad_wrt_input = FloatTensor(input_size)
-        
+        self.gradwrtinput = FloatTensor(input_size)  
+
     def forward(self, input):
-        self.output = 1 / (1 + torch.exp(-input))
+        """
+        Forward pass.
+        :param input: tensor of hidden_size shape
+        :return: tensor of hidden_size shapee containing the element-wise Sigmoid of the input tensor
+        """
+        self.input = input
+        self.output = 1 / (1 + (-input).exp)
         return self.output
+
     def backward(self, gradwrtoutput):
-        return gradwrtoutput * ( 1 - self.output) * self.output
+        """
+        Backward pass.
+        :param gradwrtoutput: tensor of hidden_size shape representing the gradient with respect to the ouput of the layer
+        :return: tensor of hidden_size shape representing the gradient with respect to the input of the layer
+        """
+        self.gradwrtinput = gradwrtoutput * ( 1 - self.output) * self.output
+        return self.gradwrtinput 
+
     def param(self):
+        """
+        :return: empty list since the activation layers have no parameters
+        """
         return []
 
 '''
