@@ -1,4 +1,5 @@
 from torch import FloatTensor
+import torch
 from math import tanh
 from Proj_287630_282604_288453.Miniproject_2.module import Module
 
@@ -143,9 +144,36 @@ class NearestUpsampling(Module):
     def param(self):
         return []
 '''
-'''
-YUCEF
-'''
+class Conv2d(object):
+    def __init__(self, kernel_size, channels_out, input_shape=None): 
+        self.weights = torch.rand(channels_out,kernel_size[0],kernel_size[1]) 
+        self.bias = torch.rand(1,kernel_size[0],kernel_size[1])
+        self.kernel_size = kernel_size
+        self.out_channels = channels_out
+
+    def forward (self, *input): 
+        self.input = input
+        #input shape 
+        self.input_shape = list(input[0].size())
+        #output of convolution as a matrix product
+        #print(self.kernel_size[0])
+        unfolded = torch.nn.functional.unfold(self.input,self.kernel_size[0],self.kernel_size[1])
+        wxb = self.weights.view(self.out_channels,-1) @ unfolded + self.bias.view(1,-1,1)
+        actual = wxb.view(1,self.out_channels, input.shape[2] - self.kernel_size[0]+1, self.shape[3] -self.kernel_size[1] + 1)
+        return actual
+
+    def backward (self, *gradwrtoutput, learning_rate):
+        #unfolded = torch.nn.functional.unfold(input,kernel_size=self.kernel_size)
+        #weight_gradient = torch.dot()
+        # bias gradient is the input_gradient. 
+        pass
+
+    def __call__(self,*input):
+        self.forward(input)
+        return self.output
+
+    def param(self):
+        return[]
 
 ######## Container ########
 '''
