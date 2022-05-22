@@ -1,5 +1,5 @@
 from torch import FloatTensor, random
-from math import tanh
+import torch
 from Proj_287630_282604_288453.Miniproject_2.others.module import Module
 
 ######## Loss ########
@@ -175,7 +175,6 @@ class Conv2d(object):
 
     def __call__(self,*input):
         self.forward(input)
-        print(input)
         return self.output
 
     def param(self):
