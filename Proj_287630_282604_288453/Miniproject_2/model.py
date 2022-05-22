@@ -2,33 +2,44 @@ from torch import FloatTensor
 from math import tanh
 from Proj_287630_282604_288453.Miniproject_2.module import Module
 
-'''
-class MSE(Module):
-    def __init__(self, input_size):
+######## Loss ########
 
-        pass 
-    def forward(self, input, target):
-        self.input = input #general output y of the network
-        self.target = target
-        #(input-target).pow(2).sum()/input.size()[0]
-        return ((input-target)**2).mean()
-    def backward(self, gradwrtoutput):
-        return 2*(self.input-self.target).sum()
-    def param(self):
-        """
-        :return: empty list since the activation layers have not parameters
-        """
-        return []
-'''
-class ReLU(Module):
+class MSE:
     def __init__(self):
+        pass 
+
+    @staticmethod
+    def compute_loss(predicted, target):
+        """
+        :param predicted: tensor of shape (...) consisting of the output of the network, the predictions 
+        :param target: tensor of shape (...) consisting of the targets
+        :return: loss
+        """
+        #(input-target).pow(2).sum()/input.size()[0]
+        return ((predicted-target)**2).mean(dim=1)
+
+    @staticmethod
+    def compute_backward_pass_gradient(predicted, target):
+        """
+        :param predicted: tensor of shape (...) consisting of the output of the network, the predictions 
+        :param target: tensor of shape (...) consisting of the targets
+        :return: gradient of the loss wrt to the predictions
+        """
+        return 2*(predicted-target).sum()
+
+######## Activation layers ########
+
+class ReLU(Module):
+    def __init__(self, input_size=0):
         """
         :param input_size: input size of the activation layer (equivalent to output size in activation layers)
         """
-        #self.hidden_size = input_size
-        #self.input = FloatTensor(input_size)
-        #self.output = FloatTensor(input_size)
-        #self.gradwrtinput = FloatTensor(input_size)
+        if(not(input_size)): 
+            pass
+        self.hidden_size = input_size
+        self.input = FloatTensor(input_size)
+        self.output = FloatTensor(input_size)
+        self.gradwrtinput = FloatTensor(input_size)
 
     def __call__(self,input):
       self.forward(input)
@@ -65,18 +76,20 @@ class ReLU(Module):
         return []
         
 class Sigmoid(Module):
-    def __init__(self):
-      """
-      :param input_size: input size of the activation layer or output size
-      """
-      #self.hidden_size = input_size
-      #self.input = FloatTensor(input_size)
-      #self.output = FloatTensor(input_size)
-      #self.gradwrtinput = FloatTensor(input_size) 
+    def __init__(self, input_size=0):
+        """
+        :param input_size: input size of the activation layer or output size
+        """
+        if(not(input_size)): 
+            pass
+        self.hidden_size = input_size
+        self.input = FloatTensor(input_size)
+        self.output = FloatTensor(input_size)
+        self.gradwrtinput = FloatTensor(input_size) 
        
     def __call__(self,input):
-      self.forward(input)
-      return self.output
+        self.forward(input)
+        return self.output
 
     def forward(self, input):
         """
@@ -103,6 +116,22 @@ class Sigmoid(Module):
         """
         return []
 
+
+######## Optimizer: Stochastiuc Gradient Descent ########
+class SGD(Module):
+    def __init__(learn_rate=0.1, batch_size=1, n_iter=50, tolerance=1e-06, random_state=None):
+        pass 
+    def forward(self, input):
+        #gradient, x, y, start, 
+        raise NotImplementedError
+    def backward(self, gradwrtoutput):
+        raise NotImplementedError
+    def param(self):
+        return []
+
+
+
+######## Convolutionnal layers ########
 '''
 class NearestUpsampling(Module):
     def __init__(self):
@@ -115,20 +144,20 @@ class NearestUpsampling(Module):
         return []
 '''
 '''
-class SGD(Module):
-    def __init__(self):
-        pass 
-    def forward(self, input):
-        raise NotImplementedError
-    def backward(self, gradwrtoutput):
-        raise NotImplementedError
-    def param(self):
-        return []
+YUCEF
 '''
+
+######## Container ########
 '''
 class Sequential(input):
-    def __init__(self):
-        pass 
+    def __init__(self, loss, input_size):
+        """
+        :param loss: class instance object with methods compute_loss and compute_grad (cf. losses.py)
+        :param input_size: size of input samples of the network
+        """
+        self.loss = loss
+        self.input_size = input_size
+        self.layers = []
     def forward(self, input):
         raise NotImplementedError
     def backward(self, gradwrtoutput):
