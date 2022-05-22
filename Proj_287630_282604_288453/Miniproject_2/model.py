@@ -1,5 +1,6 @@
 from torch import FloatTensor
-from module import Module
+from math import tanh
+from Proj_287630_282604_288453.Miniproject_2.module import Module
 
 '''
 class MSE(Module):
@@ -20,24 +21,30 @@ class MSE(Module):
         return []
 '''
 class ReLU(Module):
-    def __init__(self, input_size):
+    def __init__(self):
         """
         :param input_size: input size of the activation layer (equivalent to output size in activation layers)
         """
-        self.hidden_size = input_size
-        self.input = FloatTensor(input_size)
-        self.output = FloatTensor(input_size)
-        self.gradwrtinput = FloatTensor(input_size)
+        #self.hidden_size = input_size
+        #self.input = FloatTensor(input_size)
+        #self.output = FloatTensor(input_size)
+        #self.gradwrtinput = FloatTensor(input_size)
+
+    def __call__(self,input):
+      self.forward(input)
+      return self.output
 
     def forward(self, input):
-        """
-        Forward pass.
-        :param input: tensor of hidden size
-        :return: tensor of hidden_size shape containing the element-wise ReLU of the input tensor
-        """
-        self.input = input
-        self.output = self.input.maximum(input, 0) 
-        return self.output
+      """
+      Forward pass.
+      :param input: tensor of hidden size
+      :return: tensor of hidden_size shape containing the element-wise ReLU of the input tensor
+      """
+      self.input = input
+      self.output = self.input
+      self.output[self.output<=0] = 0
+      self.output[self.output>0] = 1
+      return self.output
 
     def backward(self, gradwrtoutput):
         """
@@ -58,14 +65,18 @@ class ReLU(Module):
         return []
         
 class Sigmoid(Module):
-    def __init__(self, input_size):
-        """
-        :param input_size: input size of the activation layer or output size
-        """
-        self.hidden_size = input_size
-        self.input = FloatTensor(input_size)
-        self.output = FloatTensor(input_size)
-        self.gradwrtinput = FloatTensor(input_size)  
+    def __init__(self):
+      """
+      :param input_size: input size of the activation layer or output size
+      """
+      #self.hidden_size = input_size
+      #self.input = FloatTensor(input_size)
+      #self.output = FloatTensor(input_size)
+      #self.gradwrtinput = FloatTensor(input_size) 
+       
+    def __call__(self,input):
+      self.forward(input)
+      return self.output
 
     def forward(self, input):
         """
@@ -74,7 +85,7 @@ class Sigmoid(Module):
         :return: tensor of hidden_size shapee containing the element-wise Sigmoid of the input tensor
         """
         self.input = input
-        self.output = 1 / (1 + (-input).exp)
+        self.output = 1 / (1 + (-self.input).exp())
         return self.output
 
     def backward(self, gradwrtoutput):
