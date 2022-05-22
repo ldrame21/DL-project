@@ -1,8 +1,10 @@
-import torch
-import __init__
+from torch import FloatTensor
+from math import tanh
+from others.module import Module
+'''
+class MSE(Module):
+    def __init__(self, input_size):
 
-class MSE(input):
-    def __init__(self):
         pass 
     def forward(self, input, target):
         self.input = input #general output y of the network
@@ -12,25 +14,55 @@ class MSE(input):
     def backward(self, gradwrtoutput):
         return 2*(self.input-self.target).sum()
     def param(self):
+        """
+        :return: empty list since the activation layers have not parameters
+        """
         return []
+'''
+class ReLU(Module):
+    def __init__(self, input_size):
+        """
+        :param input_size: input size of the activation layer or output size
+        """
+        self.hidden_size = input_size
+        self.input = FloatTensor(input_size)
+        self.output = FloatTensor(input_size)
+        self.grad_wrt_input = FloatTensor(input_size)
 
-class ReLU(input):
-    def __init__(self):
-        pass 
     def forward(self, input):
+        """
+        Forward pass.
+        :param input:
+        :return: 
+        """
         self.input = input
-        return torch.maximum(input, 0) 
+        return self.input.maximum(input, 0) 
     def backward(self, gradwrtoutput):
+        """
+        Backward pass.
+        :param gradwrtoutput:
+        :return: 
+        """
         deriv = self.input
         deriv[deriv<=0] = 0
         deriv[deriv>0] = 1
         return gradwrtoutput*deriv
     def param(self):
+        """
+        :return: empty list since the activation layers have not parameters
+        """
         return []
         
-class Sigmoid(input):
-    def __init__(self):
-        pass 
+class Sigmoid(Module):
+     def __init__(self, input_size):
+            """
+        :param input_size: input size of the activation layer or output size
+        """
+        self.hidden_size = input_size
+        self.input = FloatTensor(input_size)
+        self.output = FloatTensor(input_size)
+        self.grad_wrt_input = FloatTensor(input_size)
+        
     def forward(self, input):
         self.output = 1 / (1 + torch.exp(-input))
         return self.output
@@ -39,7 +71,8 @@ class Sigmoid(input):
     def param(self):
         return []
 
-class NearestUpsampling(input):
+'''
+class NearestUpsampling(Module):
     def __init__(self):
         pass 
     def forward(self, input):
@@ -48,8 +81,9 @@ class NearestUpsampling(input):
         raise NotImplementedError
     def param(self):
         return []
-
-class SGD(input):
+'''
+'''
+class SGD(Module):
     def __init__(self):
         pass 
     def forward(self, input):
@@ -58,7 +92,8 @@ class SGD(input):
         raise NotImplementedError
     def param(self):
         return []
-
+'''
+'''
 class Sequential(input):
     def __init__(self):
         pass 
@@ -68,5 +103,5 @@ class Sequential(input):
         raise NotImplementedError
     def param(self):
         return []
-
+'''
         
