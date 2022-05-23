@@ -5,7 +5,7 @@ import unittest
 import importlib
 from pathlib import Path
 
-from model import *
+from Proj_287630_282604_288453.Miniproject_2.model import *
 
 import torch
 import torch.nn.functional as F

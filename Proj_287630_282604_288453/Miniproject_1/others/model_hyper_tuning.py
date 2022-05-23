@@ -38,7 +38,7 @@ class Model(torch.nn.Module):
         x_decoded = self.decoder(x_encoded)
         return x_decoded
 
-    def load_pretrained_model(self, SAVE_PATH ='./data/save.pth'):
+    def load_pretrained_model(self, SAVE_PATH ='./others/bestmodel.pth'):
         ## This loads the parameters saved in bestmodel.pth into the model
         if torch.cuda.is_available():
             print('if')
@@ -49,7 +49,7 @@ class Model(torch.nn.Module):
         
 
 
-    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH=None,):
+    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='./others/bestmodel.pth'):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
         print('patience 3')

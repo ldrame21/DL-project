@@ -5,8 +5,7 @@ from torch import Tensor
 from torch import nn
 import matplotlib.pyplot as plt
 
-mini_batch_size=100
-
+import __init__
 class Model(torch.nn.Module):
     def __init__(self):
         ## instantiate model + optimizer + loss function + any other stuff you need 
@@ -20,7 +19,7 @@ class Model(torch.nn.Module):
         )
 
         self.decoder = nn.Sequential(
-            nn.UpsamplingNearest2d(32),
+            nn.UpsamplingNearest2d(scale_factor=2),
             nn.ReLU(),
             nn.ConvTranspose2d(48, 48, kernel_size = 3, padding=3//2),
             nn.ReLU(),
@@ -30,30 +29,29 @@ class Model(torch.nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=0.001, weight_decay = 1e-8)
         self.criterion = nn.MSELoss()
 
+        #move the model & criterion to the device (CPU or GPU)
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.to(device)
+        self.criterion.to(device)
+
     def forward(self, x):
         x_encoded = self.encoder(x)
         x_decoded = self.decoder(x_encoded)
         return x_decoded
 
-    def load_pretrained_model(self, SAVE_PATH ='./data/save.pth'):
+    def load_pretrained_model(self, SAVE_PATH ='Proj_287630_282604_288453/Miniproject_1/bestmodel.pth'):
         ## This loads the parameters saved in bestmodel.pth into the model
         if torch.cuda.is_available():
-            print('if')
             self.load_state_dict(torch.load(SAVE_PATH))
         else: 
-            print('else')
             self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
         
-
-
-    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH=None,):
+    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='Proj_287630_282604_288453/Miniproject_1/bestmodel.pth',mini_batch_size=100):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
 
-        #move the model, criterion & data to the device (CPU or GPU)
+        #move data to the device (CPU or GPU)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.to(device)
-        self.criterion.to(device)
         train_input, train_target = train_input.to(device), train_target.to(device)
 
         #creating the dataset
@@ -90,18 +88,16 @@ class Model(torch.nn.Module):
             return train_loss
 
 
-    def predict(self, test_input):
+    def predict(self, test_input, mini_batch_size=1):
         #:test_input: tensor of size (N1, C, H, W) that has to be denoised by the trained or the loaded network.
         #: returns a tensor of the size (N1, C, H, W)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         test_input = test_input.to(device)
-        
+
         losses = []
         model_outputs = []
         for b in range(0, test_input.size(0), mini_batch_size):
             output = self(test_input.narrow(0, b, mini_batch_size))
             model_outputs.append(output.cpu())
-             # Calculating the loss function
-            loss = self.criterion(output, test_input.narrow(0, b, mini_batch_size))
         model_outputs = torch.cat(model_outputs, dim=0)
         return model_outputs
