@@ -28,8 +28,10 @@ class Model(torch.nn.Module):
             nn.ConvTranspose2d(48, 3, kernel_size = 3, padding=3//2)
         )
 
-        self.optimizer = optim.Adam(self.parameters(), lr=0.001, weight_decay = 1e-8)
+        self.optimizer = optim.Adam(self.parameters(), lr=0.00005, weight_decay = 1e-8)
         self.criterion = nn.MSELoss()
+        #Initiate Scheduler
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.1, mode='min', patience=4,  threshold=1e-7)
 
     def forward(self, x):
         x_encoded = self.encoder(x)
@@ -50,7 +52,7 @@ class Model(torch.nn.Module):
     def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH=None,):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
-
+        print('patience 3')
         #move the model, criterion & data to the device (CPU or GPU)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.to(device)
@@ -79,6 +81,17 @@ class Model(torch.nn.Module):
             acc_loss_train = 0
             acc_loss_val = 0
 
+
+            for i, data in enumerate(val_loader, 0):
+                #No need for gradient calculation:
+                with torch.no_grad():
+                    val_input, val_target = data
+                    val_input, val_target = val_input.to(device), val_target.to(device)
+
+                    output = self.forward(val_input)
+                    loss = self.criterion(output, val_target)
+                    acc_loss_val = acc_loss_val + loss.item()
+
             for i, data in enumerate(train_loader, 0):
 
                 train_input, train_target = data
@@ -90,37 +103,29 @@ class Model(torch.nn.Module):
                 self.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-
-            for i, data in enumerate(val_loader, 0):
-                #No need for gradient calculation:
-                with torch.no_grad():
-                    val_input, val_target = data
-                    val_input, val_target = val_input.to(device), val_target.to(device)
-
-                    output = self.forward(val_input)
-                    loss = self.criterion(output, val_target)
-                    acc_loss_val = acc_loss_val + loss.item()
                     
             #for plotting the loss
             train_loss.append(acc_loss_train/len(train_subset))
             val_loss.append(acc_loss_val/len(val_subset))
 
+            #Scheduler step
+            self.scheduler.step(acc_loss_val/len(val_subset))
 
-            if verbose: print(f'Epoch #{e}: Training loss = {acc_loss_train/len(train_subset)} ----- Validation loss = {acc_loss_val/len(val_subset)} ')
+            if verbose: print(f"Epoch #{e}: lr = {self.scheduler.state_dict()['_last_lr']}, Training loss = {acc_loss_train/len(train_subset)} ----- Validation loss = {acc_loss_val/len(val_subset)} ")
 
         #Saving the model
-        #if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
+        if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
 
         #If verbose mode is active, we return the loss for plotting
         if verbose: 
             plt.figure(figsize=(8,6))
-            plt.plot(train_loss, '-o')
-            plt.plot(val_loss, '-o')
+            plt.plot(train_loss[1:], '-o')
+            plt.plot(val_loss[1:], '-o')
             plt.title('Training and validation losses')
             plt.xlabel('Epoch')
             plt.ylabel('Loss')
             plt.legend(['Training loss', 'Validation loss'])
-            return train_loss, 
+            return train_loss, val_loss, self.scheduler
 
 
     def predict(self, test_input):
