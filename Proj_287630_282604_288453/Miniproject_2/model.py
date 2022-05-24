@@ -2,7 +2,7 @@ from torch import FloatTensor, random
 import torch
 import __init__
 import matplotlib.pyplot as plt
-from Proj_287630_282604_288453.Miniproject_2.others.module import ReLU,Sigmoid,Conv2d
+from Proj_287630_282604_288453.Miniproject_2.others.module import Module,ReLU,Sigmoid,Conv2d
 
 ######## Loss ########
 
@@ -50,7 +50,7 @@ class SGD():
 
 ######## Container ########
 
-class Sequential(input):
+class Sequential(Module):
     def __init__(self, loss, input_size):
         """
         :param loss: class instance with methods compute_loss and compute_grad (in our case always MSE())
