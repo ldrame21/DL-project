@@ -1,6 +1,8 @@
 from torch import FloatTensor, random
 import torch
-from Proj_287630_282604_288453.Miniproject_2.others.module import Module
+import __init__
+import matplotlib.pyplot as plt
+from Proj_287630_282604_288453.Miniproject_2.others.module import ReLU,Sigmoid,Conv2d
 
 ######## Loss ########
 
@@ -27,99 +29,9 @@ class MSE:
         """
         return 2*(predicted-target).sum()
 
-######## Activation layers ########
-
-class ReLU(Module):
-    def __init__(self, input_size=0):
-        """
-        :param input_size: integer, input size of the activation layer (equivalent to output size in activation layers)
-        """
-        if(not(input_size)): 
-            pass
-        self.hidden_size = input_size
-        self.input = FloatTensor(input_size)
-        self.output = FloatTensor(input_size)
-        self.gradwrtinput = FloatTensor(input_size)
-
-    def __call__(self,input):
-      self.forward(input)
-      return self.output
-
-    def forward(self, input):
-      """
-      Forward pass.
-      :param input: tensor of hidden size
-      :return: tensor of hidden_size shape containing the element-wise ReLU of the input tensor
-      """
-      self.input = input
-      self.output = self.input
-      self.output[self.output<=0] = 0
-      self.output[self.output>0] = 1
-      return self.output
-
-    def backward(self, gradwrtoutput):
-        """
-        Backward pass.
-        :param gradwrtoutput: tensor of hidden_size shape representing the gradient with respect to the ouput of the layer
-        :return: tensor of hidden_size shape representing the gradient with respect to the input of the layer
-        """
-        self.gradwrtouput = gradwrtoutput
-        deriv = self.input
-        deriv[deriv<=0] = 0
-        deriv[deriv>0] = 1
-        self.gradwrtinput = self.gradwrtoutput*deriv
-        return self.gradwrtinput
-
-    def param(self):
-        """
-        :return: empty list since the activation layers have no parameters
-        """
-        return []
-        
-class Sigmoid(Module):
-    def __init__(self, input_size=0):
-        """
-        :param input_size: integer, input size of the activation layer or output size
-        """
-        if(not(input_size)): 
-            pass
-        self.hidden_size = input_size
-        self.input = FloatTensor(input_size)
-        self.output = FloatTensor(input_size)
-        self.gradwrtinput = FloatTensor(input_size) 
-       
-    def __call__(self,input):
-        self.forward(input)
-        return self.output
-
-    def forward(self, input):
-        """
-        Forward pass.
-        :param input: tensor of hidden_size shape
-        :return: tensor of hidden_size shape containing the element-wise Sigmoid of the input tensor
-        """
-        self.input = input
-        self.output = 1 / (1 + (-self.input).exp())
-        return self.output
-
-    def backward(self, gradwrtoutput):
-        """
-        Backward pass.
-        :param gradwrtoutput: tensor of hidden_size shape representing the gradient with respect to the ouput of the layer
-        :return: tensor of hidden_size shape representing the gradient with respect to the input of the layer
-        """
-        self.gradwrtouput = gradwrtoutput
-        self.gradwrtinput = gradwrtoutput * ( 1 - self.output) * self.output
-        return self.gradwrtinput 
-
-    def param(self):
-        """
-        :return: empty list since the activation layers have no parameters
-        """
-        return []
 
 
-######## Optimizer: Stochastiuc Gradient Descent ########
+######## Optimizer: Stochastic Gradient Descent ########
 class SGD():
     def __init__(self, learning_rate=0.1, batch_size=1, random_state=None):
         # paramètre nb_epoch ?
@@ -136,105 +48,8 @@ class SGD():
 
 
 
-######## Convolutionnal layers ########
-'''
-class NearestUpsampling(Module):
-    def __init__(self):
-        pass 
-    def forward(self, input):
-        raise NotImplementedError
-    def backward(self, gradwrtoutput):
-        raise NotImplementedError
-    def param(self):
-        return []
-'''
-class Conv2d(object):
-    def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, input_shape=0): 
-        """
-        :param channels_in: integer, size of the layer's input channel dimension (dimension 0)
-        :param channels_out: integer, size of the layer's output channel dimension (dimension 0)
-        :param kernel_size: integer, size of the kernel along both dimensions 
-        :param input_shape: list of int, dimensions size of the input
-        """
-        self.hidden_size = (channels_in,channels_out,kernel_size,kernel_size)
-        #random initialisation of weights
-        self.weight = torch.rand(channels_in,channels_out,kernel_size,kernel_size) 
-        self.bias = torch.rand(kernel_size)
-        self.kernel_size = kernel_size
-        self.out_channels = channels_out
-        self.in_channels = channels_in
-        self.stride = stride
-        self.dilation = dilation
-
-        self.weight_grad = FloatTensor(channels_in,channels_out,kernel_size,kernel_size).zero_()
-        self.bias_grad = FloatTensor(kernel_size).zero_()
-        if(not(input_shape)): self.gradwrtinput = FloatTensor(input_shape)
-
-    def forward (self, input): 
-        """
-        Forward pass.
-        :param input: tensor of shape (channels_in, H, W)
-        :return: tensor of shape (channels_out, H-kernel_size+1, W-kernel_size+1) containing the convolution of the input tensor 
-        with the kernels (nb of kernels defined by channels_out)
-        """
-        self.input = input[0]
-
-        #input shape 
-        self.input_shape = self.input.size()
-
-        #output of convolution as a matrix product
-        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
-        print((self.weight.view(self.out_channels,-1) @ unfolded).size())
-        print(self.bias.view(1,-1,1).size())
-        wxb = self.weight.view(self.out_channels,-1) @ unfolded + self.bias.view(1,-1,1)
-        self.output = wxb.view(1,self.out_channels, self.input_shape[2] - self.kernel_size+1, self.input_shape[3] -self.kernel_size+1)
-        return self.output
-
-    def backward (self, *gradwrtoutput, learning_rate):
-        """
-        Backward pass.
-        :param gradwrtoutput: tensor of (...) shape representing the gradient with respect to the ouput of the layer
-        :return: tensor of (...) shape representing the gradient with respect to the input of the layer
-        """
-        self.gradwrtouput = gradwrtoutput
-
-        ### dL/dF (F being the kernels, filters, L being the loss)
-
-        #convolution 
-        unfolded_input = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
-        self.weight_grad = self.gradwrtoutput.view(self.in_channels,-1) @ unfolded
-        #self.weight_grad 
-        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
-        dF = self.gradwrtoutput.view(self.in_channels,-1) @ unfolded
-        #pas sûre du view
-        self.weight_grad = dF.view(self.in_channels, self.out_channels, self.kernel_size, self.kernel_size)
-        
-        # bias gradient is the input_gradient. 
-        self.bias_grad = self.gradwrtouput.sum(self.out_channels)
-
-        ### dL/dX (X being the input, L being the loss)
-        unfolded_kernel = torch.nn.functional.unfold(self.weight.flip([2]).flip([1]),kernel_size=self.kernel_size)
-        dX = self.gradwrtoutput.view(self.out_channels,-1) @ unfolded_kernel
-        #pas sûre du view
-        self.gradwrtinput = dF.view(1,self.in_channels, self.input_shape[2] + self.kernel_size-1, self.input_shape[3] +self.kernel_size-1)
-        return self.gradwrtinput
-
-    def __call__(self,*input):
-        self.forward(input)
-        return self.output
-
-    def param(self):
-        """
-        :return: A list of pairs, each composed of a parameter tensor, and a gradient tensor of same size.
-        """
-        #pas sûre
-        return [(self.weight[:, i, :, :], self.weight_grad[:, i, :, :]) for i in range(self.hidden_size)] \
-               + [(self.bias, self.bias_grad)]
-
-
 ######## Container ########
 
-'''
 class Sequential(input):
     def __init__(self, loss, input_size):
         """
@@ -254,6 +69,8 @@ class Sequential(input):
     def param(self):
         return []
 
+######## Model #########
+'''
 class Model():
     def  __init __(self):
     ## instantiate model + optimizer + loss function + any other stuff you need
@@ -270,4 +87,108 @@ class Model():
     #:test ̇input: tensor of size (N1, C, H, W) that has to be denoised by the trained or the loaded network.
     #: returns a tensor of the size (N1, C, H, W) pass
 '''
+
+
+class Model(torch.nn.Module):
+    def __init__(self, mini_batch_size=100):
+        """
+        Instantiate model + optimizer + loss function 
+        """
+        super().__init__()
+        self.net = Sequential(
+            Conv2d(3, 3, 3, stride=2),
+            ReLU(),
+            Conv2d(3, 3, 3, stride=2), 
+            ReLU(),
+            #NearestUpsampling(),
+            #Conv2d(3, 3, 3, stride=2),
+            #ReLU(),
+            #NearestUpsampling(),
+            #Conv2d(3, 3, 3, stride=2),
+            Sigmoid()
+        )
+        self.optimizer = SGD(self.parameters(), lr=0.001, weight_decay = 1e-8)
+        self.criterion = MSE()
+        self.mini_batch_size = mini_batch_size
+
+        #move the model & criterion to the device (CPU or GPU)
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.to(device)
+        self.criterion.to(device)
+
+    def forward(self, x):
+        """
+        xxx
+        """
+        output = self.net(x)
+        return output
+
+    def load_pretrained_model(self, SAVE_PATH ='Proj_287630_282604_288453/Miniproject_1/bestmodel.pth'):
+        """
+        Loads the parameters saved in bestmodel.pth into the model
+        """
+        if torch.cuda.is_available():
+            self.load_state_dict(torch.load(SAVE_PATH))
+        else: 
+            self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
         
+    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='Proj_287630_282604_288453/Miniproject_2/bestmodel.pth',mini_batch_size=100):
+        """
+        :param train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
+        :param train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
+        """
+    
+        #move data to the device (CPU or GPU)
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        train_input, train_target = train_input.to(device), train_target.to(device)
+
+        #creating the dataset
+        #training_dataset = torch.utils.data.TensorDataset(train_input, train_target)
+        #Batching the data
+        #training_generator = torch.utils.data.DataLoader(dataset=training_dataset, batch_size=10, shuffle=True)     
+        train_loss = []
+
+        for e in range(nb_epochs):
+            acc_loss = 0
+
+            for b in range(0, train_input.size(0), self.mini_batch_size):
+                output = self.forward(train_input.narrow(0, b, self.mini_batch_size))
+                loss = self.criterion(output, train_target.narrow(0, b, self.mini_batch_size))
+                acc_loss = acc_loss + loss.item()
+                self.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+            #for plotting the loss
+            train_loss.append(acc_loss)
+
+            if verbose: print(e, acc_loss)
+
+        #Saving the model
+        #if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
+
+        #If verbose mode is active, we return the loss for plotting
+        if verbose: 
+            plt.figure(figsize=(8,6))
+            plt.plot(train_loss, '-o')
+            plt.title('Training loss')
+            plt.xlabel('Epoch')
+            plt.ylabel('Loss')
+            return train_loss
+
+
+    def predict(self, test_input):
+        """
+        :param test_input: tensor of size (N1, C, H, W) that has to be denoised by the trained or the loaded network.
+        :return: tensor of the size (N1, C, H, W)
+        """
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        test_input = test_input.to(device)
+
+        losses = []
+        model_outputs = []
+        for b in range(0, test_input.size(0), self.mini_batch_size):
+            output = self(test_input.narrow(0, b, self.mini_batch_size))
+            model_outputs.append(output.cpu())
+        model_outputs = torch.cat(model_outputs, dim=0)
+        return model_outputs   
