@@ -59,14 +59,24 @@ class Sequential(Module):
         self.input_size = input_size
         self.loss = loss
         self.layers = [] # empty until the layers of the network are given
+
+    def __call__(self,*input):
+        self.forward(input)
+        return self.output
    
     def forward(self, input):
+        """
+        """
         raise NotImplementedError
 
     def backward(self, gradwrtoutput):
+        """
+        """
         raise NotImplementedError
 
     def param(self):
+        """
+        """
         return []
 
 ######## Model #########
