@@ -149,7 +149,7 @@ class NearestUpsampling(Module):
         return []
 '''
 class Conv2d(object):
-    def __init__(self, channels_in, channels_out, kernel_size, input_shape=0): 
+    def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, input_shape=0): 
         """
         :param channels_in: integer, size of the layer's input channel dimension (dimension 0)
         :param channels_out: integer, size of the layer's output channel dimension (dimension 0)
@@ -163,6 +163,8 @@ class Conv2d(object):
         self.kernel_size = kernel_size
         self.out_channels = channels_out
         self.in_channels = channels_in
+        self.stride = stride
+        self.dilation = dilation
 
         self.weight_grad = FloatTensor(channels_in,channels_out,kernel_size,kernel_size).zero_()
         self.bias_grad = FloatTensor(kernel_size).zero_()
@@ -181,7 +183,7 @@ class Conv2d(object):
         self.input_shape = self.input.size()
 
         #output of convolution as a matrix product
-        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size)
+        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
         print((self.weight.view(self.out_channels,-1) @ unfolded).size())
         print(self.bias.view(1,-1,1).size())
         wxb = self.weight.view(self.out_channels,-1) @ unfolded + self.bias.view(1,-1,1)
@@ -199,10 +201,10 @@ class Conv2d(object):
         ### dL/dF (F being the kernels, filters, L being the loss)
 
         #convolution 
-        unfolded_input = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size)
+        unfolded_input = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
         self.weight_grad = self.gradwrtoutput.view(self.in_channels,-1) @ unfolded
         #self.weight_grad 
-        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size)
+        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
         dF = self.gradwrtoutput.view(self.in_channels,-1) @ unfolded
         #pas sûre du view
         self.weight_grad = dF.view(self.in_channels, self.out_channels, self.kernel_size, self.kernel_size)
