@@ -51,14 +51,14 @@ class SGD():
 ######## Container ########
 
 class Sequential(Module):
-    def __init__(self, loss, input_size):
+    def __init__(self, *layers) #loss, input_size):
         """
         :param loss: class instance with methods compute_loss and compute_grad (in our case always MSE())
         :param input_size: size of input samples of the network
         """
-        self.input_size = input_size
-        self.loss = loss
-        self.layers = [] # empty until the layers of the network are given
+        #self.input_size = input_size
+        #self.loss = loss
+        self.layers = layers # empty until the layers of the network are given
 
     def __call__(self,*input):
         self.forward(input)
