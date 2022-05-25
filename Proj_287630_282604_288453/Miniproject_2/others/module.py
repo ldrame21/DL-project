@@ -65,6 +65,7 @@ class Sigmoid(Module):
         """
         :param input_size: integer, input size of the activation layer or output size
         """
+        super().__init__()
         if(not(input_size)): 
             pass
         self.hidden_size = input_size
@@ -145,7 +146,7 @@ class Conv2d(object):
         :return: tensor of shape (channels_out, H-kernel_size+1, W-kernel_size+1) containing the convolution of the input tensor 
         with the kernels (nb of kernels defined by channels_out)
         """
-        self.input = input[0]
+        self.input = input
 
         #input shape 
         self.input_shape = self.input.size()
@@ -190,7 +191,7 @@ class Conv2d(object):
         return self.gradwrtinput
 
     def __call__(self,*input):
-        self.forward(input)
+        self.forward(input[0])
         return self.output
 
     def param(self):

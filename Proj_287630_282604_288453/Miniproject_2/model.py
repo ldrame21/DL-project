@@ -33,11 +33,12 @@ class MSE:
 
 ######## Optimizer: Stochastic Gradient Descent ########
 class SGD():
-    def __init__(self, learning_rate=0.1, batch_size=1, random_state=None):
+    def __init__(self, *parameters, lr=0.1):#batch_size=1, random_state=None):
         # paramètre nb_epoch ?
         # tolerance?
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
+        self.parameters = parameters
+        self.learning_rate = lr
+        #self.batch_size = batch_size ?
         random.seed()
         
     def param(self):
@@ -51,7 +52,7 @@ class SGD():
 ######## Container ########
 
 class Sequential(Module):
-    def __init__(self, *layers) #loss, input_size):
+    def __init__(self, *layers): #loss, input_size):
         """
         :param loss: class instance with methods compute_loss and compute_grad (in our case always MSE())
         :param input_size: size of input samples of the network
@@ -61,13 +62,18 @@ class Sequential(Module):
         self.layers = layers # empty until the layers of the network are given
 
     def __call__(self,*input):
-        self.forward(input)
-        return self.output
+        self.model_input = input[0]
+        self.forward(self.model_input)
+        return self.model_output
    
     def forward(self, input):
         """
         """
-        raise NotImplementedError
+        self.model_input = input
+        for layer in self.layers:
+            input = layer.forward(input)
+        self.model_output=input
+        return self.model_output
 
     def backward(self, gradwrtoutput):
         """
@@ -117,23 +123,24 @@ class Model(torch.nn.Module):
             #Conv2d(3, 3, 3, stride=2),
             Sigmoid()
         )
-        self.optimizer = SGD(self.parameters(), lr=0.001, weight_decay = 1e-8)
+        self.optimizer = SGD(self.parameters(), lr=0.001)
         self.criterion = MSE()
         self.mini_batch_size = mini_batch_size
 
         #move the model & criterion to the device (CPU or GPU)
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.to(device)
-        self.criterion.to(device)
+        #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        #self.to(device)
+        #self.criterion.to(device)
 
     def forward(self, x):
         """
         xxx
         """
+        print(x.size())
         output = self.net(x)
         return output
 
-    def load_pretrained_model(self, SAVE_PATH ='Proj_287630_282604_288453/Miniproject_1/bestmodel.pth'):
+    def load_pretrained_model(self, SAVE_PATH ='Proj_287630_282604_288453/Miniproject_2/bestmodel.pth'):
         """
         Loads the parameters saved in bestmodel.pth into the model
         """
@@ -149,8 +156,8 @@ class Model(torch.nn.Module):
         """
     
         #move data to the device (CPU or GPU)
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        train_input, train_target = train_input.to(device), train_target.to(device)
+        #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        #train_input, train_target = train_input.to(device), train_target.to(device)
 
         #creating the dataset
         #training_dataset = torch.utils.data.TensorDataset(train_input, train_target)
@@ -186,19 +193,20 @@ class Model(torch.nn.Module):
             return train_loss
 
 
-    def predict(self, test_input):
+    def predict(self, test_input, mini_batch_size=1):
         """
         :param test_input: tensor of size (N1, C, H, W) that has to be denoised by the trained or the loaded network.
         :return: tensor of the size (N1, C, H, W)
         """
 
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        test_input = test_input.to(device)
+        #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        #test_input = test_input.to(device)
 
         losses = []
         model_outputs = []
-        for b in range(0, test_input.size(0), self.mini_batch_size):
-            output = self(test_input.narrow(0, b, self.mini_batch_size))
+        for b in range(0, test_input.size(0), mini_batch_size):
+            print(test_input.narrow(0, b, mini_batch_size).size())
+            output = self(test_input.narrow(0, b, mini_batch_size))
             model_outputs.append(output.cpu())
         model_outputs = torch.cat(model_outputs, dim=0)
-        return model_outputs   
+        return model_outputs
