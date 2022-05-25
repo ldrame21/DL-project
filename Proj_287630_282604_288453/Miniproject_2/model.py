@@ -1,6 +1,6 @@
 from torch import FloatTensor, random
 import torch
-import __init__
+import Proj_287630_282604_288453.Miniproject_2.__init__
 import matplotlib.pyplot as plt
 from Proj_287630_282604_288453.Miniproject_2.others.module import Module,ReLU,Sigmoid,Conv2d
 
@@ -63,12 +63,14 @@ class Sequential(Module):
 
     def __call__(self,*input):
         self.model_input = input[0]
+        print("call seq, net")
         self.forward(self.model_input)
         return self.model_output
    
     def forward(self, input):
         """
         """
+        print("forward seq, net")
         self.model_input = input
         for layer in self.layers:
             input = layer.forward(input)
@@ -88,7 +90,7 @@ class Sequential(Module):
 ######## Model #########
 
 class Model(Module):
-    def __init__(self, mini_batch_size=100):
+    def __init__(self, mini_batch_size=1):
         """
         Instantiate model + optimizer + loss function 
         """
@@ -118,13 +120,15 @@ class Model(Module):
         """
         xxx
         """
+        print("forward model")
         self.x = x
         self.y = self.net(self.x)
         return self.y
 
     def __call__(self,*x):
+        print("call model")
         self.x = x[0]
-        self.forward(self.x)
+        self.y=self.forward(self.x)
         return self.y
    
     def load_pretrained_model(self, SAVE_PATH ='Proj_287630_282604_288453/Miniproject_2/bestmodel.pth'):
@@ -136,7 +140,7 @@ class Model(Module):
         else: 
             self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
         
-    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='Proj_287630_282604_288453/Miniproject_2/bestmodel.pth',mini_batch_size=100):
+    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='Proj_287630_282604_288453/Miniproject_2/bestmodel.pth'):
         """
         :param train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         :param train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
@@ -157,6 +161,8 @@ class Model(Module):
 
             for b in range(0, train_input.size(0), self.mini_batch_size):
                 output = self.forward(train_input.narrow(0, b, self.mini_batch_size))
+                print("output size", output.size())
+                print("target size", train_target.narrow(0, b, self.mini_batch_size).size())
                 self.loss = self.criterion.compute_loss(output, train_target.narrow(0, b, self.mini_batch_size))
                 acc_loss = acc_loss + self.loss
 
@@ -197,11 +203,11 @@ class Model(Module):
         #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #test_input = test_input.to(device)
 
+        print("predict model")
         losses = []
         model_outputs = []
         for b in range(0, test_input.size(0), mini_batch_size):
-            print(test_input.narrow(0, b, mini_batch_size).size())
             output = self(test_input.narrow(0, b, mini_batch_size))
-            model_outputs.append(output.cpu())
+            model_outputs.append(output)
         model_outputs = torch.cat(model_outputs, dim=0)
         return model_outputs

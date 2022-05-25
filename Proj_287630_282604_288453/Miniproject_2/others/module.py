@@ -105,18 +105,60 @@ class Sigmoid(Module):
 
 
 ######## Convolutionnal layers ########
-'''
-class NearestUpsampling(Module):
-    def __init__(self):
-        pass 
+
+class Upsampling(Module):
+    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, stride=1, padding=0, input_shape=0):
+        """
+        """
+        self.out_channels = channels_out
+        self.in_channels = channels_in
+        #stride is equivalent to scale_factor
+        self.stride = stride
+        self.dilation = dilation
+        self.padding = padding
+        self.kernel_size = kernel_size
+
+        #to change
+        self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
+        
+        if(not(input_shape)): 
+            pass 
+        self.gradwrtinput = FloatTensor(input_shape).zero_()
+        self.input = FloatTensor(input_shape)
+        self.gradwrtinput = FloatTensor(input_shape)
+
     def forward(self, input):
+        """
+        """
+        #NNUpsampling
+        #Conv2d
         raise NotImplementedError
     def backward(self, gradwrtoutput):
+        """
+        """
         raise NotImplementedError
     def param(self):
+        """
+        """
         return []
-'''
 
+class NNUpsampling(Module):
+    def __init__(self):
+        """
+        """
+        pass 
+    def forward(self, input):
+        """
+        """
+        raise NotImplementedError
+    def backward(self, gradwrtoutput):
+        """
+        """
+        raise NotImplementedError
+    def param(self):
+        """
+        """
+        return []
 class Conv2d(object):
     def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, input_shape=0): 
         """
@@ -147,10 +189,10 @@ class Conv2d(object):
         with the kernels (nb of kernels defined by channels_out)
         """
         self.input = input
-
+        print("forward conv2d")
         #input shape 
         self.input_shape = self.input.size()
-
+        print(self.input_shape)
         #output of convolution as a matrix product
         unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
         #print(unfolded.size())
@@ -191,6 +233,7 @@ class Conv2d(object):
         return self.gradwrtinput
 
     def __call__(self,*input):
+        print("call conv2d")
         self.forward(input[0])
         return self.output
 
