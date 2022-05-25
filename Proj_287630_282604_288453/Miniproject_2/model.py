@@ -33,7 +33,7 @@ class MSE:
 
 ######## Optimizer: Stochastic Gradient Descent ########
 class SGD():
-    def __init__(self, *parameters, lr=0.1):#batch_size=1, random_state=None):
+    def __init__(self, *parameters, lr=0.001):#batch_size=1, random_state=None):
         # paramètre nb_epoch ?
         # tolerance?
         self.parameters = parameters
@@ -170,11 +170,19 @@ class Model(torch.nn.Module):
 
             for b in range(0, train_input.size(0), self.mini_batch_size):
                 output = self.forward(train_input.narrow(0, b, self.mini_batch_size))
-                loss = self.criterion(output, train_target.narrow(0, b, self.mini_batch_size))
-                acc_loss = acc_loss + loss.item()
-                self.zero_grad()
-                loss.backward()
-                self.optimizer.step()
+                self.loss = self.criterion.compute_loss(output, train_target.narrow(0, b, self.mini_batch_size))
+                acc_loss = acc_loss + self.loss
+
+                #self.zero_grad() ???
+
+                # Backward-pass
+                grad_wrt_output = self.criterion.compute_backward_pass_gradient(output, train_target.narrow(0, b, self.mini_batch_size))
+                self.net.backward(grad_wrt_output)
+                # Gradient step
+                self.gradient_step(step_size)
+            
+
+            step_size = step_size * 0.9
             #for plotting the loss
             train_loss.append(acc_loss)
 
