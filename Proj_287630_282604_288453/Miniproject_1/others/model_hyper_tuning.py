@@ -28,10 +28,15 @@ class Model(torch.nn.Module):
             nn.ConvTranspose2d(48, 3, kernel_size = 3, padding=3//2)
         )
 
-        self.optimizer = optim.Adam(self.parameters(), lr=0.00005, weight_decay = 1e-8)
+        #Weight initialization:
+        torch.nn.init.kaiming_uniform_(tensor, a=0, mode='fan_in', nonlinearity='leaky_relu')
+        self.optimizer = optim.Adam(self.parameters(), lr=0.0001)#, weight_decay = 1e-8)
+        print('Adam')
+        #self.optimizer = optim.SGD(self.parameters(), lr=0.001)
+        #self.optimizer = optim.RMSprop(self.parameters(), lr=0.001, momentum=0.9)
         self.criterion = nn.MSELoss()
         #Initiate Scheduler
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.1, mode='min', patience=4,  threshold=1e-7)
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.1, mode='min', patience=100,  threshold=1)#patience 4, thrsh=1e-7
 
     def forward(self, x):
         x_encoded = self.encoder(x)
