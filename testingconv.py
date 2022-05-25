@@ -7,14 +7,14 @@ x = torch.randn(1, 3, 32, 32)
 
 '''Test forward'''
 print('torch implementation')
-torchconv= nn.Conv2d(3, 3, 5, stride=1, padding=0)
+torchconv= nn.Conv2d(3, 3, 5, stride=1, padding=2)
 #print(torchconv.weight.size())
 #print(torchconv.bias.size())
 output = torchconv(x)
 print(output.size())
 
 print('our implementation')
-ourconv= Conv2d(3, 3, 5, stride=1, padding=0)
+ourconv= Conv2d(3, 3, 5, stride=1, padding=2)
 ourconv.weight=torchconv.weight
 ourconv.bias=torchconv.bias
 #print(ourconv.weight.size())

@@ -225,13 +225,13 @@ class Conv2d(object):
         self.input_shape = self.input.size()
         print("forward conv2d input ",self.input_shape)
         #output of convolution as a matrix product
-        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
+        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation, padding=self.padding)
         #print(unfolded.size())
         #print(self.weight.size())
         #print((self.weight.view(self.out_channels,-1) @ unfolded).size())
         #print(self.bias.view(1,-1,1).size())
         wxb = self.weight.view(self.out_channels,-1) @ unfolded + self.bias.view(1,-1,1)
-        self.output = wxb.view(1,self.out_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1), int((self.input_shape[2] - self.kernel_size)/self.stride +1))
+        self.output = wxb.view(1,self.out_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1 +2*self.padding), int((self.input_shape[2] - self.kernel_size)/self.stride +1+2*self.padding))
         print("forward conv2d output ",self.output.size())
         return self.output
 
