@@ -2,7 +2,7 @@ from torch import FloatTensor, random
 import torch
 import Proj_287630_282604_288453.Miniproject_2.__init__
 import matplotlib.pyplot as plt
-from Proj_287630_282604_288453.Miniproject_2.others.module import Module,ReLU,Sigmoid,Conv2d
+from Proj_287630_282604_288453.Miniproject_2.others.module import Module,ReLU,Sigmoid,Conv2d,Upsampling
 
 ######## Loss ########
 
@@ -100,11 +100,9 @@ class Model(Module):
             ReLU(),
             Conv2d(3, 3, 3, stride=2), 
             ReLU(),
-            #NearestUpsampling(),
-            #Conv2d(3, 3, 3, stride=2),
-            #ReLU(),
-            #NearestUpsampling(),
-            #Conv2d(3, 3, 3, stride=2),
+            Upsampling(3, 3, 1, scale_factor=1),
+            ReLU(),
+            Upsampling(3, 3, 1, scale_factor=6),
             Sigmoid()
         )
         self.optimizer = SGD(self.net.param(), lr=0.001)

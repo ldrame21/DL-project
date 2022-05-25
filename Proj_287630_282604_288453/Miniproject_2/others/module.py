@@ -1,6 +1,8 @@
 from torch import FloatTensor, random
 import torch
 
+######## Module skeleton ########
+
 class Module(object):
     def forward(self, *arguments):
         raise NotImplementedError
@@ -18,12 +20,11 @@ class ReLU(Module):
         """
         :param input_size: integer, input size of the activation layer (equivalent to output size in activation layers)
         """
-        if(not(input_size)): 
-            pass
-        self.hidden_size = input_size
-        self.input = FloatTensor(input_size)
-        self.output = FloatTensor(input_size)
-        self.gradwrtinput = FloatTensor(input_size)
+        if(input_size): 
+            self.hidden_size = input_size
+            self.input = FloatTensor(input_size).zero_()
+            self.output = FloatTensor(input_size).zero_()
+            self.gradwrtinput = FloatTensor(input_size).zero_()
 
     def __call__(self,input):
       self.forward(input)
@@ -66,12 +67,11 @@ class Sigmoid(Module):
         :param input_size: integer, input size of the activation layer or output size
         """
         super().__init__()
-        if(not(input_size)): 
-            pass
-        self.hidden_size = input_size
-        self.input = FloatTensor(input_size)
-        self.output = FloatTensor(input_size)
-        self.gradwrtinput = FloatTensor(input_size) 
+        if(input_size): 
+            self.hidden_size = input_size
+            self.input = FloatTensor(input_size).zero_()
+            self.output = FloatTensor(input_size).zero_()
+            self.gradwrtinput = FloatTensor(input_size).zero_()
        
     def __call__(self,input):
         self.forward(input)
@@ -106,14 +106,51 @@ class Sigmoid(Module):
 
 ######## Convolutionnal layers ########
 
-class Upsampling(Module):
-    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, stride=1, padding=0, input_shape=0):
+class NearestUpsampling(Module):
+    def __init__(self, channels_in, channels_out, dilation=1, scale_factor=1, padding=0, input_shape=0):
         """
         """
         self.out_channels = channels_out
         self.in_channels = channels_in
         #stride is equivalent to scale_factor
-        self.stride = stride
+        self.scale_factor = scale_factor
+        self.dilation = dilation
+        self.padding = padding
+
+        if(input_shape): 
+            self.gradwrtinput = FloatTensor(input_shape).zero_()
+            self.input = FloatTensor(input_shape).zero_()
+            self.gradwrtoutput = FloatTensor((input_shape[0],input_shape[1],input_shape[2]*self.scale_factor,input_shape[2]*self.scale_factor)).zero_()
+
+    def forward(self, input):
+        """
+        """
+        self.input=input
+        print(" NearestUpsampling input",self.input.size())
+        # autre methode: ? neighbors=torch.nn.functional.unfold(self.input, kernel_size=1, stride=self.stride, dilation=self.dilation)
+        nearest_neighbors_v = self.input.repeat_interleave(self.scale_factor, dim=2)
+        self.output = nearest_neighbors_v.repeat_interleave(self.scale_factor, dim=3)
+        return self.output
+
+    def backward(self, gradwrtoutput):
+        """
+        """
+        raise NotImplementedError
+
+    def param(self):
+        """
+        """
+        return []
+
+
+class Upsampling(Module):
+    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, scale_factor=1, padding=0, input_shape=0):
+        """
+        """
+        self.out_channels = channels_out
+        self.in_channels = channels_in
+        #stride is equivalent to scale_factor
+        self.scale_factor = scale_factor
         self.dilation = dilation
         self.padding = padding
         self.kernel_size = kernel_size
@@ -121,46 +158,40 @@ class Upsampling(Module):
         #to change
         self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
         
-        if(not(input_shape)): 
-            pass 
-        self.gradwrtinput = FloatTensor(input_shape).zero_()
-        self.input = FloatTensor(input_shape)
-        self.gradwrtinput = FloatTensor(input_shape)
+        if(input_shape): 
+            self.gradwrtinput = FloatTensor(input_shape).zero_()
+            self.input = FloatTensor(input_shape).zero_()
+            self.gradwrtoutput = FloatTensor((input_shape[0],input_shape[1],input_shape[2]*self.scale_factor,input_shape[2]*self.scale_factor)).zero_()
+            self.kernel_size = kernel_size
 
-    def forward(self, input):
+    def forward(self, input=0):
         """
         """
+        self.input = input
+        print("forward upsampling, input ",self.input.size())
         #NNUpsampling
+        self.intermediate_output= NearestUpsampling(self.in_channels, self.out_channels, self.dilation, self.scale_factor, input_shape=self.input.size()).forward(self.input)
         #Conv2d
-        raise NotImplementedError
+        self.output = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, input_shape=self.intermediate_output.size()).forward(self.intermediate_output)
+        return self.output
+        #channels_in, channels_out, kernel_size, stride=1, dilation=1, input_shape=0
+
+    def __call__(self,input):
+        self.output = self.forward(input)
+        return self.output
+
     def backward(self, gradwrtoutput):
         """
         """
         raise NotImplementedError
+
     def param(self):
         """
         """
         return []
 
-class NNUpsampling(Module):
-    def __init__(self):
-        """
-        """
-        pass 
-    def forward(self, input):
-        """
-        """
-        raise NotImplementedError
-    def backward(self, gradwrtoutput):
-        """
-        """
-        raise NotImplementedError
-    def param(self):
-        """
-        """
-        return []
 class Conv2d(object):
-    def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, input_shape=0): 
+    def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, padding=0 ,input_shape=0): 
         """
         :param channels_in: integer, size of the layer's input channel dimension (dimension 0)
         :param channels_out: integer, size of the layer's output channel dimension (dimension 0)
@@ -189,10 +220,9 @@ class Conv2d(object):
         with the kernels (nb of kernels defined by channels_out)
         """
         self.input = input
-        print("forward conv2d")
         #input shape 
         self.input_shape = self.input.size()
-        print(self.input_shape)
+        print("forward conv2d input ",self.input_shape)
         #output of convolution as a matrix product
         unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
         #print(unfolded.size())
@@ -201,6 +231,7 @@ class Conv2d(object):
         #print(self.bias.view(1,-1,1).size())
         wxb = self.weight.view(self.out_channels,-1) @ unfolded + self.bias.view(1,-1,1)
         self.output = wxb.view(1,self.out_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1), int((self.input_shape[2] - self.kernel_size)/self.stride +1))
+        print("forward conv2d output ",self.output.size())
         return self.output
 
     def backward (self, *gradwrtoutput, learning_rate):
