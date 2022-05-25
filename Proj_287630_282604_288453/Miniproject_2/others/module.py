@@ -169,7 +169,7 @@ class Conv2d(object):
         """
         self.gradwrtoutput = gradwrtoutput
 
-        ### dL/dF (F being the kernels, filters, L being the loss)
+        ### dL/dF (F being the kernels, weights, L being the loss)
 
         #convolution 
         unfolded_input = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
@@ -199,5 +199,5 @@ class Conv2d(object):
         :return: A list of pairs, each composed of a parameter tensor, and a gradient tensor of same size.
         """
         #pas sûre
-        return [(self.weight[:, i, :, :], self.weight_grad[:, i, :, :]) for i in range(self.hidden_size)] \
+        return [(self.weight[i, :, :, :], self.weight_grad[i, :, :, :]) for i in range(self.hidden_size[0])] \
                + [(self.bias, self.bias_grad)]
