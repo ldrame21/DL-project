@@ -86,26 +86,8 @@ class Sequential(Module):
         return []
 
 ######## Model #########
-'''
-class Model():
-    def  __init __(self):
-    ## instantiate model + optimizer + loss function + any other stuff you need
-    pass
-    def load_pretrained_model(self):
-    ## This loads the parameters saved in bestmodel.pth into the model pass
-    
-    def train(self, train_input, train_target):
-    #:train ̇input: tensor of size (N, C, H, W) containing a noisy version of the images same images, which only differs from the input by their noise.
-    #:train ̇target: tensor of size (N, C, H, W) containing another noisy version of the
-    pass
 
-    def predict(self, test_input):
-    #:test ̇input: tensor of size (N1, C, H, W) that has to be denoised by the trained or the loaded network.
-    #: returns a tensor of the size (N1, C, H, W) pass
-'''
-
-
-class Model(torch.nn.Module):
+class Model(Module):
     def __init__(self, mini_batch_size=100):
         """
         Instantiate model + optimizer + loss function 
@@ -123,7 +105,7 @@ class Model(torch.nn.Module):
             #Conv2d(3, 3, 3, stride=2),
             Sigmoid()
         )
-        self.optimizer = SGD(self.parameters(), lr=0.001)
+        self.optimizer = SGD(self.net.param(), lr=0.001)
         self.criterion = MSE()
         self.mini_batch_size = mini_batch_size
 
@@ -136,10 +118,15 @@ class Model(torch.nn.Module):
         """
         xxx
         """
-        print(x.size())
-        output = self.net(x)
-        return output
+        self.x = x
+        self.y = self.net(self.x)
+        return self.y
 
+    def __call__(self,*x):
+        self.x = x[0]
+        self.forward(self.x)
+        return self.y
+   
     def load_pretrained_model(self, SAVE_PATH ='Proj_287630_282604_288453/Miniproject_2/bestmodel.pth'):
         """
         Loads the parameters saved in bestmodel.pth into the model
