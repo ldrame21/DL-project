@@ -5,28 +5,28 @@ from Proj_287630_282604_288453.Miniproject_2.others.module import *
 
 x = torch.randn(1, 3, 32, 32)
 
-'''Test forward
+'''Test forward'''
 print('torch implementation')
 torchconv= nn.Conv2d(3, 3, 5, stride=1)
-#print(torchconv.weight)
-#print(torchconv.bias)
+#print(torchconv.weight.size())
+#print(torchconv.bias.size())
 output = torchconv(x)
-print(output)
+print(output.size())
 
 print('our implementation')
 ourconv= Conv2d(3, 3, 5, stride=1)
 ourconv.weight=torchconv.weight
 ourconv.bias=torchconv.bias
-#print(ourconv.weight)
-#print(ourconv.bias)
+#print(ourconv.weight.size())
+#print(ourconv.bias.size())
 output_our = ourconv(x)
-print(output_our)
+print(output_our.size())
 
 
 print(torch.allclose(output_our, output))
-'''
 
-'''Test backward'''
+
+'''Test backward
 print('torch implementation')
 torchconv= nn.Conv2d(3, 3, 3, stride=1)
 out = torchconv(x)
@@ -48,5 +48,4 @@ print(ourconv.bias_grad.size())
 print(ourconv.gradwrtinput.size())
 print(ourconv.gradwrtoutput.size())
 
-print('haha')
-
+'''
