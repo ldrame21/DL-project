@@ -207,6 +207,7 @@ class Conv2d(object):
         self.in_channels = channels_in
         self.stride = stride
         self.dilation = dilation
+        self.padding = padding
 
         self.weight_grad = FloatTensor(channels_out,channels_in,kernel_size,kernel_size).zero_()
         self.bias_grad = FloatTensor(channels_out).zero_()
@@ -215,7 +216,7 @@ class Conv2d(object):
     def forward (self, input): 
         """
         Forward pass.
-        :param input: tensor of shape (channels_in, H, W)
+        :param input: tensor of shape (1, channels_in, H, W)
         :return: tensor of shape (channels_out, H-kernel_size+1, W-kernel_size+1) containing the convolution of the input tensor 
         with the kernels (nb of kernels defined by channels_out)
         """
