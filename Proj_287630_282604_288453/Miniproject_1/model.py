@@ -5,7 +5,7 @@ from torch import Tensor
 from torch import nn
 import matplotlib.pyplot as plt
 
-import __init__
+import Proj_287630_282604_288453.Miniproject_1.__init__
 class Model(torch.nn.Module):
     def __init__(self):
         ## instantiate model + optimizer + loss function + any other stuff you need 
@@ -54,10 +54,6 @@ class Model(torch.nn.Module):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         train_input, train_target = train_input.to(device), train_target.to(device)
 
-        #creating the dataset
-        #training_dataset = torch.utils.data.TensorDataset(train_input, train_target)
-        #Batching the data
-        #training_generator = torch.utils.data.DataLoader(dataset=training_dataset, batch_size=10, shuffle=True)     
         train_loss = []
 
         for e in range(nb_epochs):
@@ -76,7 +72,7 @@ class Model(torch.nn.Module):
             if verbose: print(e, acc_loss)
 
         #Saving the model
-        #if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
+        if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
 
         #If verbose mode is active, we return the loss for plotting
         if verbose: 
