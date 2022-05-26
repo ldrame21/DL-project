@@ -1,9 +1,9 @@
-from torch import FloatTensor, random
-import torch
+from torch import FloatTensor, cuda, device, save, load, cat
 import Proj_287630_282604_288453.Miniproject_2.__init__
 import matplotlib.pyplot as plt
 from Proj_287630_282604_288453.Miniproject_2.others.module import Module,ReLU,Sigmoid,Conv2d,Upsampling
 
+import random
 from collections import OrderedDict
 
 ######## Verbose ########
@@ -34,17 +34,25 @@ class MSE:
 
 ######## Optimizer: Stochastic Gradient Descent ########
 class SGD():
-    def __init__(self, *parameters, lr=0.001):#batch_size=1, random_state=None):
+    def __init__(self, lr=0.001, mini_batch_size=1, criterion=MSE(), *layers):
         # paramètre nb_epoch ?
         # tolerance?
-        self.parameters = parameters
         self.learning_rate = lr
-        #self.batch_size = batch_size ?
-        random.seed()
-        
+        self.batch_size = mini_batch_size
+        self.criterion = criterion
+        self.layers=layers
+        random.seed(0)
+
+    def gradient_step(self):
+        # generate random int for the stochastic choice of image in the mini_batch_size
+        idx = random.randint(0, self.batch_size-1)
+        picker=self.layers[0].input[idx,:,:,:]
+        for layer_in_net in self.layers:
+            print(layer_in_net)
+            layer_in_net.update_gradient_step(self.learning_rate)
+
     def param(self):
         """
-        :return:
         """
         return []
 
@@ -52,13 +60,11 @@ class SGD():
 ######## Container ########
 
 class Sequential(Module):
-    def __init__(self, *layers): #loss, input_size):
+    def __init__(self, *layers): #loss
         """
         :param loss: class instance with methods compute_loss and compute_grad (in our case always MSE())
         :param input_size: size of input samples of the network
         """
-        #self.input_size = input_size
-        #self.loss = loss
         self.layers = layers # empty until the layers of the network are given
 
     def __call__(self,*input):
@@ -99,11 +105,12 @@ class Sequential(Module):
 ######## Model #########
 
 class Model():
-    def __init__(self, mini_batch_size=1):
+    def __init__(self, mini_batch_size=10, lr=0):
         """
         Instantiate model + optimizer + loss function 
         """
         super().__init__()
+    
         self.net = Sequential(
             Conv2d(3, 3, 3, stride=2), #padding 1
             ReLU(),
@@ -114,11 +121,13 @@ class Model():
             Upsampling(3, 3, 3, scale_factor=2, padding=1), #pas de padding
             Sigmoid()
         )
-        self.optimizer = SGD(self.net.param(), lr=0.001)
         self.criterion = MSE()
+        self.optimizer = SGD(lr, mini_batch_size, MSE(), self.net.layers[0])
         self.mini_batch_size = mini_batch_size
+        self.lr=lr
+
         #move the model & criterion to the device (CPU or GPU)
-        #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        #device = device('cuda' if cuda.is_available() else 'cpu')
         #self.to(device)
         #self.criterion.to(device)
 
@@ -141,10 +150,10 @@ class Model():
         """
         Loads the parameters saved in bestmodel.pth into the model
         """
-        if torch.cuda.is_available():
-            self.load_state(torch.load(SAVE_PATH))
+        if cuda.is_available():
+            self.load_state(load(SAVE_PATH))
         else:
-            self.load_state(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
+            self.load_state(load(SAVE_PATH, map_location=device('cpu')))
 
     def load_state(self, saved_model):
         '''
@@ -172,13 +181,13 @@ class Model():
         """
     
         #move data to the device (CPU or GPU)
-        #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        #device = device('cuda' if cuda.is_available() else 'cpu')
         #train_input, train_target = train_input.to(device), train_target.to(device)
 
         #creating the dataset
-        #training_dataset = torch.utils.data.TensorDataset(train_input, train_target)
+        #training_dataset = utils.data.TensorDataset(train_input, train_target)
         #Batching the data
-        #training_generator = torch.utils.data.DataLoader(dataset=training_dataset, batch_size=10, shuffle=True)     
+        #training_generator = utils.data.DataLoader(dataset=training_dataset, batch_size=10, shuffle=True)     
 
         train_loss = []
 
@@ -198,16 +207,15 @@ class Model():
                 grad_wrt_output = self.criterion.compute_backward_pass_gradient(output, train_target.narrow(0, b, self.mini_batch_size))
                 self.net.backward(grad_wrt_output)
                 # Gradient step
-                self.gradient_step(step_size)
+                self.optimizer.gradient_step()
             
-            step_size = step_size * 0.9
             #for plotting the loss
             train_loss.append(acc_loss)
 
             if verbose: print(e, acc_loss)
 
         #Saving the model
-        if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
+        if SAVE_PATH is not None : save(self.state_dict(), SAVE_PATH)
 
         #If verbose mode is active, we return the loss for plotting
         if verbose: 
@@ -224,15 +232,13 @@ class Model():
         :param test_input: tensor of size (N1, C, H, W) that has to be denoised by the trained or the loaded network.
         :return: tensor of the size (N1, C, H, W)
         """
-
-        #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        #device = device('cuda' if cuda.is_available() else 'cpu')
         #test_input = test_input.to(device)
 
-        #print("predict model")
         losses = []
         model_outputs = []
         for b in range(0, test_input.size(0), mini_batch_size):
             output = self(test_input.narrow(0, b, mini_batch_size))
             model_outputs.append(output)
-        model_outputs = torch.cat(model_outputs, dim=0)
+        model_outputs = cat(model_outputs, dim=0)
         return model_outputs
