@@ -63,14 +63,14 @@ class Sequential(Module):
 
     def __call__(self,*input):
         self.model_input = input[0]
-        print("call seq, net")
+        #print("call seq, net")
         self.forward(self.model_input)
         return self.model_output
    
     def forward(self, input):
         """
         """
-        print("forward seq, net")
+        #print("forward seq, net")
         self.model_input = input
         for layer in self.layers:
             input = layer.forward(input)
@@ -98,7 +98,7 @@ class Sequential(Module):
 
 ######## Model #########
 
-class Model(Module):
+class Model():
     def __init__(self, mini_batch_size=1):
         """
         Instantiate model + optimizer + loss function 
@@ -126,13 +126,13 @@ class Model(Module):
         """
         xxx
         """
-        print("forward model")
+        #print("forward model")
         self.x = x
         self.y = self.net(self.x)
         return self.y
 
     def __call__(self,*x):
-        print("call model")
+        #print("call model")
         self.x = x[0]
         self.y=self.forward(self.x)
         return self.y
@@ -228,7 +228,7 @@ class Model(Module):
         #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #test_input = test_input.to(device)
 
-        print("predict model")
+        #print("predict model")
         losses = []
         model_outputs = []
         for b in range(0, test_input.size(0), mini_batch_size):

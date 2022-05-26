@@ -138,7 +138,7 @@ class NearestUpsampling(Module):
         """
         self.input=input
         self.input_shape=input.size()
-        print(" NearestUpsampling input",self.input.size())
+        #print(" NearestUpsampling input",self.input.size())
         # autre methode: ? neighbors=torch.nn.functional.unfold(self.input, kernel_size=1, stride=self.stride, dilation=self.dilation)
         nearest_neighbors_v = self.input.repeat_interleave(self.scale_factor, dim=2)
         self.output = nearest_neighbors_v.repeat_interleave(self.scale_factor, dim=3)
@@ -159,8 +159,11 @@ class NearestUpsampling(Module):
         output= self.gradwrtoutput.masked_select(mask)
         self.gradwrtinput=output.view(int(self.gradwrtoutput.size(0)/self.kernel.size(0)),int(self.gradwrtoutput.size(1)/self.kernel.size(1)))
         '''
-
-        self.gradwrtinput=unfold(gradwrtoutput, self.scale_factor, stride=self.scale_factor).sum(dim=2).view(self.input_shape[0],self.input_shape[1],self.input_shape[2],self.input_shape[2])
+        print("input backward upsamling", gradwrtoutput.size())
+        print("kernel size ", self.scale_factor)
+        print("1:  ", unfold(self.gradwrtoutput, kernel_size=self.scale_factor, stride=self.scale_factor).size())
+        print("2:  ", unfold(self.gradwrtoutput, kernel_size=self.scale_factor, stride=self.scale_factor).sum(1).size())
+        self.gradwrtinput=unfold(self.gradwrtoutput, self.scale_factor, stride=self.scale_factor).reshape(self.gradwrtoutput.size(0),self.in_channels,self.scale_factor**2,-1).sum(2).view(self.input_shape[0],self.input_shape[1],self.input_shape[2],self.input_shape[2])
         return self.gradwrtinput
 
     def param(self):
@@ -169,7 +172,7 @@ class NearestUpsampling(Module):
         return []
 
 class Conv2d(object):
-    def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, padding=0 ,input_shape=0): 
+    def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, padding=0 ,input_shape=0, weight=0,bias=0): 
         """
         :param channels_in: integer, size of the layer's input channel dimension (dimension 0)
         :param channels_out: integer, size of the layer's output channel dimension (dimension 0)
@@ -178,8 +181,14 @@ class Conv2d(object):
         """
         self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
         #random initialisation of weights
-        self.weight = rand(channels_out,channels_in,kernel_size,kernel_size) 
-        self.bias = rand(channels_out)
+        if(not(weight)):
+            self.weight = rand(channels_out,channels_in,kernel_size,kernel_size) 
+            self.bias = rand(channels_out)
+        #else:
+            #to remove
+        #self.weight=weight
+        #self.bias=bias
+
         self.kernel_size = kernel_size
         self.out_channels = channels_out
         self.in_channels = channels_in
@@ -201,7 +210,7 @@ class Conv2d(object):
         self.input = input
         #input shape 
         self.input_shape = self.input.size()
-        print("forward conv2d input ",self.input_shape)
+        #print("forward conv2d input ",self.input_shape)
         #output of convolution as a matrix product
         self.unfolded = unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation, padding=self.padding)
         #print(unfolded.size())
@@ -210,7 +219,7 @@ class Conv2d(object):
         #print(self.bias.view(1,-1,1).size())
         wxb = self.weight.view(self.out_channels,-1) @ self.unfolded + self.bias.view(1,-1,1)
         self.output = wxb.view(self.input_shape[0],self.out_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1 +2*self.padding), int((self.input_shape[2] - self.kernel_size)/self.stride +1+2*self.padding))
-        print("forward conv2d output ",self.output.size())
+        #print("forward conv2d output ",self.output.size())
         return self.output
 
     def backward (self, gradwrtoutput):
@@ -221,45 +230,24 @@ class Conv2d(object):
         """
         self.gradwrtoutput = gradwrtoutput
         print("Conv2d gradwrtoutput: ",self.gradwrtoutput.size())
-        '''### dL/dF (F being the kernels, weights, L being the loss)
-
-        #convolution 
-        unfolded_input = unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
-        print("Conv2d unfolded input: ",unfolded_input.size())
-        self.weight_grad = self.gradwrtoutput.view(self.in_channels,-1) @ unfolded_input
-        #self.weight_grad 
-        unfolded = unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
-        dF = self.gradwrtoutput.view(self.in_channels,-1) @ unfolded
-        #pas sûre du view
-        self.weight_grad = dF.view(self.out_channels, self.in_channels, self.kernel_size, self.kernel_size)
-        
-        # bias gradient is the input_gradient. 
-        self.bias_grad = self.gradwrtoutput.sum(3).sum(2).sum(0)
-
-        ### dL/dX (X being the input, L being the loss)
-        unfolded_kernel = unfold(self.weight.flip([2]).flip([1]),kernel_size=self.kernel_size)
-        dX = self.gradwrtoutput.view(self.out_channels,-1) @ unfolded_kernel
-        #pas sûre du view
-        self.gradwrtinput = dF.view(1,self.in_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1), int((self.input_shape[2] - self.kernel_size)/self.stride +1))'''
 
         gradwrtoutput_flat = self.gradwrtoutput.permute(1, 2, 3, 0).reshape(self.out_channels, -1)
-
+        # weight gradient 
         dW = gradwrtoutput_flat @ self.unfolded.transpose(1,2)
-        dW = dW.reshape(self.weight.size())
-
-        db = self.gradwrtoutput.sum((0,2,3)).reshape(self.out_channels, -1)
-
+        self.weight_grad = dW.reshape(self.weight.size())
+        # bias gradient is the input_gradient. 
+        self.bias_grad = self.gradwrtoutput.sum(3).sum(2).sum(0).reshape(self.out_channels, -1)
+        
+        # derivative of the Loss with respect to input
         W_flat = self.weight.reshape(self.out_channels, -1)
-
-        dX_col = W_flat.transpose(0,1) @ gradwrtoutput_flat 
-        print("dxcol :", dX_col.size())
-        dX_col = dX_col.reshape()
-        self.gradwrtinput = unfold(dX_col, kernel_size=self.kernel_size, padding=self.padding, stride=self.stride)
-
+        dX_col = W_flat.transpose(0,1) @ gradwrtoutput_flat
+        dX_col = dX_col.reshape(dX_col.size(0),int(dX_col.size(1)/gradwrtoutput.size(0)),-1).permute(2,0,1)
+        self.gradwrtinput = fold(dX_col, output_size=(self.input_shape[2],self.input_shape[3]), kernel_size=self.kernel_size, padding=self.padding, stride=self.stride)
+        
         return self.gradwrtinput
 
     def __call__(self,*input):
-        print("call conv2d")
+        #print("call conv2d")
         self.forward(input[0])
         return self.output
 
@@ -280,7 +268,7 @@ class Conv2d(object):
 
 
 class Upsampling(Module):
-    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, scale_factor=1, padding=0, input_shape=0):
+    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, scale_factor=1, padding=0, input_shape=0, weight=0, bias=0):
         """
         """
         self.out_channels = channels_out
@@ -290,12 +278,18 @@ class Upsampling(Module):
         self.dilation = dilation
         self.padding = padding
         self.kernel_size = kernel_size
-        self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding)
-        #self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size())
+        #à remove weight=weight et bias=bias
+        #random initialisation of weights
+        if(not(weight)):
+            self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding)
+            self.nearestupsampling=NearestUpsampling(self.in_channels, self.out_channels, self.scale_factor)
+        #    self.bias = rand(channels_out)
+        #else:
+            #to remove
+        #   self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, weight=weight, bias=bias)
+        #self.nearestupsampling=NearestUpsampling(self.in_channels, self.out_channels, self.scale_factor)
         self.weight = self.conv2d.weight
         self.bias = self.conv2d.bias
-
-        
 
         #to change
         self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
@@ -304,19 +298,17 @@ class Upsampling(Module):
             self.gradwrtinput = FloatTensor(input_shape).zero_()
             self.input = FloatTensor(input_shape).zero_()
             self.gradwrtoutput = FloatTensor((input_shape[0],input_shape[1],input_shape[2]*self.scale_factor,input_shape[2]*self.scale_factor)).zero_()
+            self.nearestupsampling=NearestUpsampling(self.in_channels, self.out_channels, self.scale_factor, input_shape=self.input.size())
             self.kernel_size = kernel_size
 
     def forward(self, input=0):
         """
         """
         self.input = input
-        print("forward upsampling, input ",self.input.size())
+        #print("forward upsampling, input ",self.input.size())
         #NNUpsampling
-        self.nearestupsampling=NearestUpsampling(self.in_channels, self.out_channels, self.scale_factor, input_shape=self.input.size())
         self.intermediate_output=self.nearestupsampling.forward(self.input)
         #Conv2d
-        self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size())
-
         self.output = self.conv2d.forward(self.intermediate_output)
         return self.output
 
