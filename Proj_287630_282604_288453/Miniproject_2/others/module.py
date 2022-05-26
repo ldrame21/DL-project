@@ -141,55 +141,6 @@ class NearestUpsampling(Module):
         """
         """
         return []
-
-
-class Upsampling(Module):
-    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, scale_factor=1, padding=0, input_shape=0):
-        """
-        """
-        self.out_channels = channels_out
-        self.in_channels = channels_in
-        #stride is equivalent to scale_factor
-        self.scale_factor = scale_factor
-        self.dilation = dilation
-        self.padding = padding
-        self.kernel_size = kernel_size
-
-        #to change
-        self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
-        
-        if(input_shape): 
-            self.gradwrtinput = FloatTensor(input_shape).zero_()
-            self.input = FloatTensor(input_shape).zero_()
-            self.gradwrtoutput = FloatTensor((input_shape[0],input_shape[1],input_shape[2]*self.scale_factor,input_shape[2]*self.scale_factor)).zero_()
-            self.kernel_size = kernel_size
-
-    def forward(self, input=0):
-        """
-        """
-        self.input = input
-        print("forward upsampling, input ",self.input.size())
-        #NNUpsampling
-        self.intermediate_output= NearestUpsampling(self.in_channels, self.out_channels, self.dilation, self.scale_factor, input_shape=self.input.size()).forward(self.input)
-        #Conv2d
-        self.output = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, input_shape=self.intermediate_output.size()).forward(self.intermediate_output)
-        return self.output
-        #channels_in, channels_out, kernel_size, stride=1, dilation=1, input_shape=0
-
-    def __call__(self,input):
-        self.output = self.forward(input)
-        return self.output
-
-    def backward(self, gradwrtoutput):
-        """
-        """
-        raise NotImplementedError
-
-    def param(self):
-        """
-        """
-        return []
-
 class Conv2d(object):
     def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, padding=0 ,input_shape=0): 
         """
@@ -276,3 +227,53 @@ class Conv2d(object):
         #pas sûre
         return [(self.weight[i, :, :, :], self.weight_grad[i, :, :, :]) for i in range(self.hidden_size[0])] \
                + [(self.bias, self.bias_grad)]
+
+
+
+class Upsampling(Module):
+    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, scale_factor=1, padding=0, input_shape=0):
+        """
+        """
+        self.out_channels = channels_out
+        self.in_channels = channels_in
+        #stride is equivalent to scale_factor
+        self.scale_factor = scale_factor
+        self.dilation = dilation
+        self.padding = padding
+        self.kernel_size = kernel_size
+
+        #to change
+        self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
+        
+        if(input_shape): 
+            self.gradwrtinput = FloatTensor(input_shape).zero_()
+            self.input = FloatTensor(input_shape).zero_()
+            self.gradwrtoutput = FloatTensor((input_shape[0],input_shape[1],input_shape[2]*self.scale_factor,input_shape[2]*self.scale_factor)).zero_()
+            self.kernel_size = kernel_size
+
+    def forward(self, input=0):
+        """
+        """
+        self.input = input
+        print("forward upsampling, input ",self.input.size())
+        #NNUpsampling
+        self.intermediate_output= NearestUpsampling(self.in_channels, self.out_channels, self.dilation, self.scale_factor, input_shape=self.input.size()).forward(self.input)
+        #Conv2d
+        self.output = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size()).forward(self.intermediate_output)
+        return self.output
+        #channels_in, channels_out, kernel_size, stride=1, dilation=1, input_shape=0
+
+    def __call__(self,input):
+        self.output = self.forward(input)
+        return self.output
+
+    def backward(self, gradwrtoutput):
+        """
+        """
+        raise NotImplementedError
+
+    def param(self):
+        """
+        """
+        return []
+

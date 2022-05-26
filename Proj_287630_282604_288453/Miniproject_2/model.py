@@ -4,8 +4,10 @@ import Proj_287630_282604_288453.Miniproject_2.__init__
 import matplotlib.pyplot as plt
 from Proj_287630_282604_288453.Miniproject_2.others.module import Module,ReLU,Sigmoid,Conv2d,Upsampling
 
-######## Loss ########
+######## Verbose ########
+verbose=1
 
+######## Loss ########
 class MSE:
     def __init__(self):
         pass 
@@ -29,8 +31,6 @@ class MSE:
         """
         return 2*(predicted-target).sum()
 
-
-
 ######## Optimizer: Stochastic Gradient Descent ########
 class SGD():
     def __init__(self, *parameters, lr=0.001):#batch_size=1, random_state=None):
@@ -46,7 +46,6 @@ class SGD():
         :return:
         """
         return []
-
 
 
 ######## Container ########
@@ -100,9 +99,9 @@ class Model(Module):
             ReLU(),
             Conv2d(3, 3, 3, stride=2), 
             ReLU(),
-            Upsampling(3, 3, 1, scale_factor=1),
+            Upsampling(3, 3, 3, scale_factor=2, padding=2),
             ReLU(),
-            Upsampling(3, 3, 1, scale_factor=6),
+            Upsampling(3, 3, 3, scale_factor=2, padding=1),
             Sigmoid()
         )
         self.optimizer = SGD(self.net.param(), lr=0.001)
@@ -133,10 +132,11 @@ class Model(Module):
         """
         Loads the parameters saved in bestmodel.pth into the model
         """
-        if torch.cuda.is_available():
-            self.load_state_dict(torch.load(SAVE_PATH))
-        else: 
-            self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
+        #if torch.cuda.is_available():
+        #    self.load_state_dict(torch.load(SAVE_PATH))
+        #else: 
+        #    self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
+        #il faut utiliser pickle askip
         
     def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='Proj_287630_282604_288453/Miniproject_2/bestmodel.pth'):
         """
