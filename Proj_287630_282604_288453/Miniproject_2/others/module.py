@@ -1,4 +1,4 @@
-from torch import FloatTensor, rand, random
+from torch import FloatTensor, rand, random, zeros, bool
 from torch.nn.functional import fold, unfold
 
 ######## Module class type ########
@@ -110,7 +110,7 @@ class NearestUpsampling(Module):
     def __init__(self, channels_in, channels_out, dilation=1, scale_factor=1, padding=0, input_shape=0):
         """
         """
-        self.out_channels = channels_out
+        self.out_channels = channels_in
         self.in_channels = channels_in
         #stride is equivalent to scale_factor
         self.scale_factor = scale_factor
@@ -135,12 +135,22 @@ class NearestUpsampling(Module):
     def backward(self, gradwrtoutput):
         """
         """
-        raise NotImplementedError
+        self.gradwrtoutput = gradwrtoutput
+        kernel_mask=zeros(self.kernel.size(), dtype=bool)
+        kernel_mask[int(self.kernel.size(0)-self.kernel.size(0)/2),int(self.kernel.size(1)-self.kernel.size(1)/2)]=True
+        print(kernel_mask)
+        mask=kernel_mask.repeat(1,1,int(self.gradwrtoutput.size(2)/self.kernel.size(0)),int(self.gradwrtoutput.size(3)/self.kernel.size(1))).repeat(1,self.out_channels,1,1) 
+        print(mask)
+        print(mask)
+        output= self.gradwrtoutput.masked_select(mask)
+        self.gradwrtinput=output.view(int(self.gradwrtoutput.size(0)/self.kernel.size(0)),int(self.gradwrtoutput.size(1)/self.kernel.size(1)))
+        return self.gradwrtinput
 
     def param(self):
         """
         """
         return []
+
 class Conv2d(object):
     def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, padding=0 ,input_shape=0): 
         """
@@ -227,7 +237,6 @@ class Conv2d(object):
         #pas sûre
         return [(self.weight[i, :, :, :], self.weight_grad[i, :, :, :]) for i in range(self.hidden_size[0])] \
                + [(self.bias, self.bias_grad)]
-
 
 
 class Upsampling(Module):
