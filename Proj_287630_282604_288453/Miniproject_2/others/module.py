@@ -196,7 +196,7 @@ class Conv2d(object):
         print("forward conv2d output ",self.output.size())
         return self.output
 
-    def backward (self, *gradwrtoutput, learning_rate):
+    def backward (self, *gradwrtoutput):
         """
         Backward pass.
         :param gradwrtoutput: tensor of (...) shape representing the gradient with respect to the output of the layer
@@ -279,7 +279,10 @@ class Upsampling(Module):
     def backward(self, gradwrtoutput):
         """
         """
-        raise NotImplementedError
+        self.gradwrtoutput=gradwrtoutput
+        self.intermediate_gradwrtinput = Conv2d.backward(gradwrtoutput)
+        self.gradwrtinput = NearestUpsampling.backward(self.intermediate_gradwrtinput)
+        return self.gradwrtinput
 
     def param(self):
         """
