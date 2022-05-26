@@ -47,12 +47,12 @@ class Model(torch.nn.Module):
 '''
         
         print('Adam')
-        self.optimizer = optim.Adam(self.parameters(), lr=0.001, weight_decay = 1e-7)
+        self.optimizer = optim.Adam(self.parameters(), lr=0.001)#, weight_decay = 1e-8)
         #self.optimizer = optim.SGD(self.parameters(), lr=0.001)
         #self.optimizer = optim.RMSprop(self.parameters(), lr=0.001, momentum=0.9)
         self.criterion = nn.MSELoss()
         #Initiate Scheduler
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.1, mode='min', patience=100,  threshold=1)#patience 4, thrsh=1e-7
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.1, mode='min', patience=2,  threshold=1e-7)#patience 4, thrsh=1e-7
 
     def forward(self, x):
         x_encoded = self.encoder(x)
