@@ -29,9 +29,25 @@ class Model(torch.nn.Module):
         )
 
         #Weight initialization:
-        torch.nn.init.kaiming_uniform_(tensor, a=0, mode='fan_in', nonlinearity='leaky_relu')
-        self.optimizer = optim.Adam(self.parameters(), lr=0.0001)#, weight_decay = 1e-8)
+        '''def weight_init(m):
+          classname = m.__class__.__name__
+          if classname.find('Conv') != -1:
+            print('conv')
+            torch.nn.init.kaiming_uniform_(m.weight, a=0, mode='fan_in', nonlinearity='relu')
+          elif classname.find('Max') != -1:
+            print('max')
+            torch.nn.init.kaiming_uniform_(m.weight, a=0, mode='fan_in', nonlinearity='relu')
+          elif classname.find('Up') != -1:
+            print('up')
+            torch.nn.init.kaiming_uniform_(m.weight, a=0, mode='fan_in', nonlinearity='relu')
+
+
+        self.encoder.apply(weight_init)
+        self.decoder.apply(weight_init)
+'''
+        
         print('Adam')
+        self.optimizer = optim.Adam(self.parameters(), lr=0.001, weight_decay = 1e-7)
         #self.optimizer = optim.SGD(self.parameters(), lr=0.001)
         #self.optimizer = optim.RMSprop(self.parameters(), lr=0.001, momentum=0.9)
         self.criterion = nn.MSELoss()
