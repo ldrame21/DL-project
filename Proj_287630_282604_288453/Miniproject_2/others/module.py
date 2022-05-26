@@ -1,7 +1,7 @@
-from torch import FloatTensor, random
-import torch
+from torch import FloatTensor, rand, random
+from torch.nn.functional import fold, unfold
 
-######## Module skeleton ########
+######## Module class type ########
 
 class Module(object):
     def forward(self, *arguments):
@@ -151,8 +151,8 @@ class Conv2d(object):
         """
         self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
         #random initialisation of weights
-        self.weight = torch.rand(channels_out,channels_in,kernel_size,kernel_size) 
-        self.bias = torch.rand(channels_out)
+        self.weight = rand(channels_out,channels_in,kernel_size,kernel_size) 
+        self.bias = rand(channels_out)
         self.kernel_size = kernel_size
         self.out_channels = channels_out
         self.in_channels = channels_in
@@ -176,7 +176,7 @@ class Conv2d(object):
         self.input_shape = self.input.size()
         print("forward conv2d input ",self.input_shape)
         #output of convolution as a matrix product
-        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation, padding=self.padding)
+        unfolded = unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation, padding=self.padding)
         #print(unfolded.size())
         #print(self.weight.size())
         #print((self.weight.view(self.out_channels,-1) @ unfolded).size())
@@ -197,10 +197,10 @@ class Conv2d(object):
         ### dL/dF (F being the kernels, weights, L being the loss)
 
         #convolution 
-        unfolded_input = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
+        unfolded_input = unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
         self.weight_grad = self.gradwrtoutput.view(self.in_channels,-1) @ unfolded_input
         #self.weight_grad 
-        unfolded = torch.nn.functional.unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
+        unfolded = unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation)
         dF = self.gradwrtoutput.view(self.in_channels,-1) @ unfolded
         #pas sûre du view
         self.weight_grad = dF.view(self.out_channels, self.in_channels, self.kernel_size, self.kernel_size)
@@ -209,7 +209,7 @@ class Conv2d(object):
         self.bias_grad = self.gradwrtoutput.sum(self.out_channels)
 
         ### dL/dX (X being the input, L being the loss)
-        unfolded_kernel = torch.nn.functional.unfold(self.weight.flip([2]).flip([1]),kernel_size=self.kernel_size)
+        unfolded_kernel = unfold(self.weight.flip([2]).flip([1]),kernel_size=self.kernel_size)
         dX = self.gradwrtoutput.view(self.out_channels,-1) @ unfolded_kernel
         #pas sûre du view
         self.gradwrtinput = dF.view(1,self.in_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1), int((self.input_shape[2] - self.kernel_size)/self.stride +1))

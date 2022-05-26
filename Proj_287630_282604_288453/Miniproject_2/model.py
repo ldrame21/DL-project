@@ -136,7 +136,10 @@ class Model(Module):
         #    self.load_state_dict(torch.load(SAVE_PATH))
         #else: 
         #    self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
+
         #il faut utiliser pickle askip
+        # et gérer cpu ou gpu
+        raise NotImplementedError
         
     def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='Proj_287630_282604_288453/Miniproject_2/bestmodel.pth'):
         """
