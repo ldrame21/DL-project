@@ -21,8 +21,7 @@ class MSE:
         :param target: tensor of shape (...) consisting of the targets
         :return: loss
         """
-        #(input-target).pow(2).sum()/input.size()[0]
-        return ((predicted-target)**2).mean(dim=1)
+        return ((predicted-target)**2).mean()
 
     @staticmethod
     def compute_backward_pass_gradient(predicted, target):
@@ -31,7 +30,7 @@ class MSE:
         :param target: tensor of shape (...) consisting of the targets
         :return: gradient of the loss wrt to the predictions
         """
-        return 2*(predicted-target).sum()
+        return 2*(predicted-target)/predicted.reshape[-1].size(0)
 
 ######## Optimizer: Stochastic Gradient Descent ########
 class SGD():
@@ -77,6 +76,12 @@ class Sequential(Module):
             input = layer.forward(input)
         self.model_output=input
         return self.model_output
+    
+    def zero_grad(self):
+        """
+        """
+        for layer in self.layers:
+            input = layer.zero_grad(input)
 
     def backward(self, gradwrtoutput):
         """
@@ -97,13 +102,13 @@ class Model(Module):
         """
         super().__init__()
         self.net = Sequential(
-            Conv2d(3, 3, 3, stride=2),
+            Conv2d(3, 3, 3, stride=2), #padding 1
             ReLU(),
-            Conv2d(3, 3, 3, stride=2), 
+            Conv2d(3, 3, 3, stride=2), #padding 1 
             ReLU(),
-            Upsampling(3, 3, 3, scale_factor=2, padding=2),
+            Upsampling(3, 3, 3, scale_factor=2, padding=2), #pas de padding
             ReLU(),
-            Upsampling(3, 3, 3, scale_factor=2, padding=1),
+            Upsampling(3, 3, 3, scale_factor=2, padding=1), #pas de padding
             Sigmoid()
         )
         self.optimizer = SGD(self.net.param(), lr=0.001)
@@ -171,6 +176,7 @@ class Model(Module):
         #training_dataset = torch.utils.data.TensorDataset(train_input, train_target)
         #Batching the data
         #training_generator = torch.utils.data.DataLoader(dataset=training_dataset, batch_size=10, shuffle=True)     
+
         train_loss = []
 
         for e in range(nb_epochs):
@@ -183,7 +189,7 @@ class Model(Module):
                 self.loss = self.criterion.compute_loss(output, train_target.narrow(0, b, self.mini_batch_size))
                 acc_loss = acc_loss + self.loss
 
-                #self.zero_grad() ???
+                self.net.zero_grad()
 
                 # Backward-pass
                 grad_wrt_output = self.criterion.compute_backward_pass_gradient(output, train_target.narrow(0, b, self.mini_batch_size))
@@ -191,7 +197,6 @@ class Model(Module):
                 # Gradient step
                 self.gradient_step(step_size)
             
-
             step_size = step_size * 0.9
             #for plotting the loss
             train_loss.append(acc_loss)
