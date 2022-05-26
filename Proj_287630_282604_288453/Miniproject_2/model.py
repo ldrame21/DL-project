@@ -93,9 +93,11 @@ class Sequential(Module):
         """
         """
         for layer in reversed(list(self.layers)):
-            gradwrtoutput = layer.backward(gradwrtoutput)
+            #gradwrtoutput = layer.backward(gradwrtoutput)
+            for idx in range(gradwrtoutput.size(0)):
+                print(gradwrtoutput[idx:idx+1,:,:,:].size())
+                gradwrtoutput = layer.backward(gradwrtoutput[idx:idx+1,:,:,:])
         self.gradwrtinput=gradwrtoutput
-        return self.gradwrtinput
 
     def param(self):
         """
@@ -105,7 +107,7 @@ class Sequential(Module):
 ######## Model #########
 
 class Model():
-    def __init__(self, mini_batch_size=10, lr=0):
+    def __init__(self, mini_batch_size=1, lr=0.001):
         """
         Instantiate model + optimizer + loss function 
         """

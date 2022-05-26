@@ -230,10 +230,14 @@ class Conv2d(object):
 
         # weight gradient 
         dW = gradwrtoutput_flat @ self.unfolded.transpose(1,2).sum(0,keepdim=True)
-        self.weight_grad = dW.reshape(self.weight.size())
+        print(self.weight_grad.size())
+        self.weight_grad =dW.reshape(self.weight.size())
+        print(self.weight_grad.size())
+        #self.weight_grad = self.weight_grad.add(dW.reshape(self.weight.size()))
 
         # bias gradient is the input_gradient. 
-        self.bias_grad = self.gradwrtoutput.sum(3).sum(2).sum(0).reshape(self.out_channels, -1)
+        self.bias_grad =  self.gradwrtoutput.sum(3).sum(2).sum(0).reshape(self.out_channels, -1)
+        #self.bias_grad = self.bias_grad.add(self.gradwrtoutput.sum(3).sum(2).sum(0).reshape(self.out_channels, -1))
   
         # derivative of the Loss with respect to input
         W_flat = self.weight.reshape(self.out_channels, -1)
