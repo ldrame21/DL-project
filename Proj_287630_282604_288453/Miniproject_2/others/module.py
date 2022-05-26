@@ -54,6 +54,12 @@ class ReLU(Module):
         deriv[deriv>0] = 1
         self.gradwrtinput = self.gradwrtoutput*deriv
         return self.gradwrtinput
+    
+    def zero_grad(self):
+        """
+        Nothing to do because no parameter. Method added for consistency with other layers
+        """
+        pass
 
     def param(self):
         """
@@ -97,6 +103,12 @@ class Sigmoid(Module):
         self.gradwrtinput = gradwrtoutput * ( 1 - self.output) * self.output
         return self.gradwrtinput 
 
+    def zero_grad(self):
+        """
+        Nothing to do because no parameter. Method added for consistency with other layers
+        """
+        pass
+
     def param(self):
         """
         :return: empty list since the activation layers have no parameters
@@ -107,17 +119,16 @@ class Sigmoid(Module):
 ######## Convolutionnal layers ########
 
 class NearestUpsampling(Module):
-    def __init__(self, channels_in, channels_out, dilation=1, scale_factor=1, padding=0, input_shape=0):
+    def __init__(self, channels_in, channels_out, scale_factor=1, input_shape=0):
         """
         """
         self.out_channels = channels_in
         self.in_channels = channels_in
         #stride is equivalent to scale_factor
         self.scale_factor = scale_factor
-        self.dilation = dilation
-        self.padding = padding
 
         if(input_shape): 
+            self.input_shape=input_shape
             self.gradwrtinput = FloatTensor(input_shape).zero_()
             self.input = FloatTensor(input_shape).zero_()
             self.gradwrtoutput = FloatTensor((input_shape[0],input_shape[1],input_shape[2]*self.scale_factor,input_shape[2]*self.scale_factor)).zero_()
@@ -126,6 +137,7 @@ class NearestUpsampling(Module):
         """
         """
         self.input=input
+        self.input_shape=input.size()
         print(" NearestUpsampling input",self.input.size())
         # autre methode: ? neighbors=torch.nn.functional.unfold(self.input, kernel_size=1, stride=self.stride, dilation=self.dilation)
         nearest_neighbors_v = self.input.repeat_interleave(self.scale_factor, dim=2)
@@ -136,6 +148,8 @@ class NearestUpsampling(Module):
         """
         """
         self.gradwrtoutput = gradwrtoutput
+
+        ''' à remove car considère pas sum mia sjuste un element, n'accumule pas les graients mais pas suppr tt de suite au cas ou
         kernel_mask=zeros(self.kernel.size(), dtype=bool)
         kernel_mask[int(self.kernel.size(0)-self.kernel.size(0)/2),int(self.kernel.size(1)-self.kernel.size(1)/2)]=True
         print(kernel_mask)
@@ -144,6 +158,9 @@ class NearestUpsampling(Module):
         print(mask)
         output= self.gradwrtoutput.masked_select(mask)
         self.gradwrtinput=output.view(int(self.gradwrtoutput.size(0)/self.kernel.size(0)),int(self.gradwrtoutput.size(1)/self.kernel.size(1)))
+        '''
+
+        self.gradwrtinput=unfold(gradwrtoutput, self.scale_factor).sum(dim=0).view(self.input_shape[0],self.input_shape[1],self.input_shape[2]*self.scale_factor,self.input_shape[2]*self.scale_factor)
         return self.gradwrtinput
 
     def param(self):
@@ -230,6 +247,13 @@ class Conv2d(object):
         self.forward(input[0])
         return self.output
 
+    def zero_grad(self):
+        """
+        Reset all parameter gradients to 0
+        """
+        self.weight_grad.zero_()
+        self.bias_grad.zero_()
+
     def param(self):
         """
         :return: A list of pairs, each composed of a parameter tensor, and a gradient tensor of same size.
@@ -268,11 +292,9 @@ class Upsampling(Module):
         #NNUpsampling
         self.intermediate_output= NearestUpsampling(self.in_channels, self.out_channels, self.dilation, self.scale_factor, input_shape=self.input.size()).forward(self.input)
         #Conv2d
-        conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size())
-        self.param_conv2d = conv2d.param()
-        self.output = conv2d.forward(self.intermediate_output)
+        self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size())
+        self.output = self.conv2d.forward(self.intermediate_output)
         return self.output
-        #channels_in, channels_out, kernel_size, stride=1, dilation=1, input_shape=0
 
     def __call__(self,input):
         self.output = self.forward(input)
@@ -286,5 +308,16 @@ class Upsampling(Module):
         self.gradwrtinput = NearestUpsampling.backward(self.intermediate_gradwrtinput)
         return self.gradwrtinput
 
+    def zero_grad(self):
+        """
+        Reset all parameter gradients to 0 (only Conv2d layer is considered since NearestUpsampling has no parameters)
+        """
+        self.conv2d.zero_grad()
+        self.conv2d.zero_grad()
+
     def param(self):
-        return self.param_conv2d
+        """
+        :return: A list of pairs, each composed of a parameter tensor, and a gradient tensor of same size.
+        (only Conv2d layer is considered since NearestUpsampling has no parameters)
+        """
+        return self.conv2d.param()
