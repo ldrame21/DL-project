@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from Proj_287630_282604_288453.Miniproject_2.others.module import *
 
-x = torch.randn(1, 3, 32, 32)
+x = torch.randn(5, 3, 32, 32)
 
 '''Test forward'''
 print('torch implementation')

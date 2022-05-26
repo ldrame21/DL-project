@@ -182,7 +182,7 @@ class Conv2d(object):
         #print((self.weight.view(self.out_channels,-1) @ unfolded).size())
         #print(self.bias.view(1,-1,1).size())
         wxb = self.weight.view(self.out_channels,-1) @ unfolded + self.bias.view(1,-1,1)
-        self.output = wxb.view(1,self.out_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1 +2*self.padding), int((self.input_shape[2] - self.kernel_size)/self.stride +1+2*self.padding))
+        self.output = wxb.view(self.input_shape[0],self.out_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1 +2*self.padding), int((self.input_shape[2] - self.kernel_size)/self.stride +1+2*self.padding))
         print("forward conv2d output ",self.output.size())
         return self.output
 
@@ -259,7 +259,9 @@ class Upsampling(Module):
         #NNUpsampling
         self.intermediate_output= NearestUpsampling(self.in_channels, self.out_channels, self.dilation, self.scale_factor, input_shape=self.input.size()).forward(self.input)
         #Conv2d
-        self.output = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size()).forward(self.intermediate_output)
+        conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size())
+        self.param_conv2d = conv2d.param()
+        self.output = conv2d.forward(self.intermediate_output)
         return self.output
         #channels_in, channels_out, kernel_size, stride=1, dilation=1, input_shape=0
 
@@ -273,7 +275,4 @@ class Upsampling(Module):
         raise NotImplementedError
 
     def param(self):
-        """
-        """
-        return []
-
+        return self.param_conv2d
