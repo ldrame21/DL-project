@@ -28,7 +28,7 @@ class MSE:
         :param target: tensor of shape (...) consisting of the targets
         :return: gradient of the loss wrt to the predictions
         """
-        return 2*(predicted-target)/predicted.reshape[-1].size(0)
+        return 2*(predicted-target)/predicted.reshape(-1).size(0)
 
 ######## Optimizer: Stochastic Gradient Descent ########
 class SGD():
@@ -79,12 +79,15 @@ class Sequential(Module):
         """
         """
         for layer in self.layers:
-            input = layer.zero_grad(input)
+            layer.zero_grad()
 
     def backward(self, gradwrtoutput):
         """
         """
-        raise NotImplementedError
+        for layer in reversed(list(self.layers)):
+            gradwrtoutput = layer.backward(gradwrtoutput)
+        self.gradwrtinput=gradwrtoutput
+        return self.gradwrtinput
 
     def param(self):
         """
