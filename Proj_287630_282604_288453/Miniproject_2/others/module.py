@@ -27,20 +27,20 @@ class ReLU(Module):
             self.gradwrtinput = FloatTensor(input_size).zero_()
 
     def __call__(self,input):
-      self.forward(input)
-      return self.output
+        self.forward(input)
+        return self.output
 
     def forward(self, input):
-      """
-      Forward pass.
-      :param input: tensor of hidden size
-      :return: tensor of hidden_size shape containing the element-wise ReLU of the input tensor
-      """
-      self.input = input
-      self.output = self.input
-      self.output[self.output<=0] = 0
-      self.output[self.output>0] = 1
-      return self.output
+        """
+        Forward pass.
+        :param input: tensor of hidden size
+        :return: tensor of hidden_size shape containing the element-wise ReLU of the input tensor
+        """
+        self.input = input
+        self.output = self.input
+        self.output[self.output<=0] = 0
+        self.output[self.output>0] = 1
+        return self.output
 
     def backward(self, gradwrtoutput):
         """
@@ -109,6 +109,12 @@ class Sigmoid(Module):
         """
         pass
 
+    def update_gradient_step(self):
+        """
+        Nothing to do because no parameter. Method added for consistency with other layers
+        """
+        pass
+
     def param(self):
         """
         :return: empty list since the activation layers have no parameters
@@ -155,6 +161,12 @@ class NearestUpsampling(Module):
         self.gradwrtinput=summed_gradient.view(self.input_shape[0],self.input_shape[1],self.input_shape[2],self.input_shape[2])
         return self.gradwrtinput
 
+    def update_gradient_step(self):
+        """
+        Nothing to do because no parameter. Method added for consistency with other layers
+        """
+        pass
+    
     def param(self):
         """
         """
@@ -235,6 +247,13 @@ class Conv2d(object):
         
         return self.gradwrtinput
 
+    def update_gradient_step(self,lr):
+        """
+        Gradient step
+        """
+        self.weight = self.weight - lr * self.weight_grad
+        self.bias = self.bias - lr * self.bias_grad
+
     def __call__(self,*input):
         #print("call conv2d")
         self.forward(input[0])
@@ -255,9 +274,8 @@ class Conv2d(object):
         return [(self.weight[i, :, :, :], self.weight_grad[i, :, :, :]) for i in range(self.hidden_size[0])] \
                + [(self.bias, self.bias_grad)]
 
-
 class Upsampling(Module):
-    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, scale_factor=1, padding=0, input_shape=0, weight=0, bias=0):
+    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, scale_factor=1, padding=0, input_shape=0):
         """
         """
         self.out_channels = channels_out
@@ -267,16 +285,11 @@ class Upsampling(Module):
         self.dilation = dilation
         self.padding = padding
         self.kernel_size = kernel_size
-        #à remove weight=weight et bias=bias
+
         #random initialisation of weights
-        if(not(weight)):
-            self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding)
-            self.nearestupsampling=NearestUpsampling(self.in_channels, self.out_channels, self.scale_factor)
-        #    self.bias = rand(channels_out)
-        #else:
-            #to remove
-        #   self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, weight=weight, bias=bias)
-        #self.nearestupsampling=NearestUpsampling(self.in_channels, self.out_channels, self.scale_factor)
+        self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding)
+        self.nearestupsampling=NearestUpsampling(self.in_channels, self.out_channels, self.scale_factor)
+
         self.weight = self.conv2d.weight
         self.bias = self.conv2d.bias
 
@@ -313,6 +326,12 @@ class Upsampling(Module):
         self.intermediate_gradwrtinput = self.conv2d.backward(self.gradwrtoutput)
         self.gradwrtinput = self.nearestupsampling.backward(self.intermediate_gradwrtinput)
         return self.gradwrtinput
+    
+    def update_gradient_step(self,lr):
+        """
+        Gradient step - Only conv2d layer has parameters 
+        """
+        self.conv2d.update_gradient_step(lr)
 
     def zero_grad(self):
         """
