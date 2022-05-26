@@ -241,6 +241,12 @@ class Upsampling(Module):
         self.dilation = dilation
         self.padding = padding
         self.kernel_size = kernel_size
+        self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding)
+        #self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size())
+        self.weight = self.conv2d.weight
+        self.bias = self.conv2d.bias
+
+        
 
         #to change
         self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
@@ -259,9 +265,8 @@ class Upsampling(Module):
         #NNUpsampling
         self.intermediate_output= NearestUpsampling(self.in_channels, self.out_channels, self.dilation, self.scale_factor, input_shape=self.input.size()).forward(self.input)
         #Conv2d
-        conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size())
-        self.param_conv2d = conv2d.param()
-        self.output = conv2d.forward(self.intermediate_output)
+        #conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size())
+        self.output = self.conv2d.forward(self.intermediate_output)
         return self.output
         #channels_in, channels_out, kernel_size, stride=1, dilation=1, input_shape=0
 
@@ -275,4 +280,4 @@ class Upsampling(Module):
         raise NotImplementedError
 
     def param(self):
-        return self.param_conv2d
+        return self.weight

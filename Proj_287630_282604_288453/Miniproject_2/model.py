@@ -4,6 +4,8 @@ import Proj_287630_282604_288453.Miniproject_2.__init__
 import matplotlib.pyplot as plt
 from Proj_287630_282604_288453.Miniproject_2.others.module import Module,ReLU,Sigmoid,Conv2d,Upsampling
 
+from collections import OrderedDict
+
 ######## Verbose ########
 verbose=1
 
@@ -107,7 +109,6 @@ class Model(Module):
         self.optimizer = SGD(self.net.param(), lr=0.001)
         self.criterion = MSE()
         self.mini_batch_size = mini_batch_size
-
         #move the model & criterion to the device (CPU or GPU)
         #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #self.to(device)
@@ -132,14 +133,29 @@ class Model(Module):
         """
         Loads the parameters saved in bestmodel.pth into the model
         """
-        #if torch.cuda.is_available():
-        #    self.load_state_dict(torch.load(SAVE_PATH))
-        #else: 
-        #    self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
+        if torch.cuda.is_available():
+            self.load_state(torch.load(SAVE_PATH))
+        else:
+            self.load_state(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
 
-        #il faut utiliser pickle askip
-        # et gérer cpu ou gpu
-        raise NotImplementedError
+    def load_state(self, saved_model):
+        '''
+        Reads .pth and loads weights
+        '''
+        for i in range(4):
+            self.net.layers[i*2].weight = saved_model.get('conv2d.'+str(2*i)+'.weight')
+            self.net.layers[i*2].bias = saved_model.get('conv2d.'+str(2*i)+'.bias')
+
+    def state_dict(self):
+        '''
+        return weights and bias of layers, in a ordered dict
+        '''
+        dict = OrderedDict()
+        for i in range(4): 
+            dict['conv2d.'+str(2*i)+'.weight']=self.net.layers[i*2].weight
+            dict['conv2d.'+str(2*i)+'.bias']=self.net.layers[i*2].bias
+
+        return dict
         
     def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='Proj_287630_282604_288453/Miniproject_2/bestmodel.pth'):
         """
@@ -183,7 +199,7 @@ class Model(Module):
             if verbose: print(e, acc_loss)
 
         #Saving the model
-        #if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
+        if SAVE_PATH is not None : torch.save(self.state_dict(), SAVE_PATH)
 
         #If verbose mode is active, we return the loss for plotting
         if verbose: 
