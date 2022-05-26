@@ -148,22 +148,11 @@ class NearestUpsampling(Module):
         """
         """
         self.gradwrtoutput = gradwrtoutput
-
-        ''' à remove car considère pas sum mia sjuste un element, n'accumule pas les graients mais pas suppr tt de suite au cas ou
-        kernel_mask=zeros(self.kernel.size(), dtype=bool)
-        kernel_mask[int(self.kernel.size(0)-self.kernel.size(0)/2),int(self.kernel.size(1)-self.kernel.size(1)/2)]=True
-        print(kernel_mask)
-        mask=kernel_mask.repeat(1,1,int(self.gradwrtoutput.size(2)/self.kernel.size(0)),int(self.gradwrtoutput.size(3)/self.kernel.size(1))).repeat(1,self.out_channels,1,1) 
-        print(mask)
-        print(mask)
-        output= self.gradwrtoutput.masked_select(mask)
-        self.gradwrtinput=output.view(int(self.gradwrtoutput.size(0)/self.kernel.size(0)),int(self.gradwrtoutput.size(1)/self.kernel.size(1)))
-        '''
-        print("input backward upsamling", gradwrtoutput.size())
-        print("kernel size ", self.scale_factor)
-        print("1:  ", unfold(self.gradwrtoutput, kernel_size=self.scale_factor, stride=self.scale_factor).size())
-        print("2:  ", unfold(self.gradwrtoutput, kernel_size=self.scale_factor, stride=self.scale_factor).sum(1).size())
-        self.gradwrtinput=unfold(self.gradwrtoutput, self.scale_factor, stride=self.scale_factor).reshape(self.gradwrtoutput.size(0),self.in_channels,self.scale_factor**2,-1).sum(2).view(self.input_shape[0],self.input_shape[1],self.input_shape[2],self.input_shape[2])
+        unfolded_gradwrtoutput=unfold(self.gradwrtoutput, self.scale_factor, stride=self.scale_factor)
+        #sum gradient of the loss wrt to output along kernels
+        summed_gradient=unfolded_gradwrtoutput.reshape(self.gradwrtoutput.size(0),self.in_channels,self.scale_factor**2,-1).sum(2)
+        #reshape the vector as the input vector of the upsampling
+        self.gradwrtinput=summed_gradient.view(self.input_shape[0],self.input_shape[1],self.input_shape[2],self.input_shape[2])
         return self.gradwrtinput
 
     def param(self):
