@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 from Proj_287630_282604_288453.Miniproject_2.others.module import *
+from Proj_287630_282604_288453.Miniproject_2 import model
 
 x = torch.randn(5, 3, 32, 32)
 
@@ -25,6 +26,8 @@ print(output_our.size())
 
 print(torch.allclose(output_our, output))
 
+model = model.Model()
+print(model.state_dict().keys())
 
 '''Test backward
 print('torch implementation')

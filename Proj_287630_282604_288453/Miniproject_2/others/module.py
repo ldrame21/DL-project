@@ -290,6 +290,12 @@ class Upsampling(Module):
         self.dilation = dilation
         self.padding = padding
         self.kernel_size = kernel_size
+        self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding)
+        #self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size())
+        self.weight = self.conv2d.weight
+        self.bias = self.conv2d.bias
+
+        
 
         #to change
         self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
@@ -310,6 +316,7 @@ class Upsampling(Module):
         self.intermediate_output=self.nearestupsampling.forward(self.input)
         #Conv2d
         self.conv2d = Conv2d(self.in_channels, self.out_channels, self.kernel_size, dilation=self.dilation, padding=self.padding, input_shape=self.intermediate_output.size())
+
         self.output = self.conv2d.forward(self.intermediate_output)
         return self.output
 
@@ -334,8 +341,4 @@ class Upsampling(Module):
         self.conv2d.zero_grad()
 
     def param(self):
-        """
-        :return: A list of pairs, each composed of a parameter tensor, and a gradient tensor of same size.
-        (only Conv2d layer is considered since NearestUpsampling has no parameters)
-        """
-        return self.conv2d.param()
+        return self.weight
