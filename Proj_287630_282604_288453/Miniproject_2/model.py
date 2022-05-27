@@ -95,11 +95,15 @@ class Sequential(Module):
     def backward(self, gradwrtoutput):
         """
         """
+        self.gradwrtoutput=gradwrtoutput
+        print("backward_seq",self.gradwrtoutput.size(0))
         for layer in reversed(list(self.layers)):
-            #gradwrtoutput = layer.backward(gradwrtoutput)
-            for idx in range(gradwrtoutput.size(0)):
-                print("backward_seq",gradwrtoutput[idx:idx+1,:,:,:].size())
-                gradwrtoutput = layer.backward(gradwrtoutput[idx:idx+1,:,:,:])
+            gradwrtoutput = layer.backward(gradwrtoutput)
+            #for idx in range(gradwrtoutput.size(0)):
+            #    print("backward_seq before layer",gradwrtoutput[idx:idx+1,:,:,:].size())
+            #    print(layer)
+            #    gradwrtoutput = layer.backward(gradwrtoutput[idx:idx+1,:,:,:])
+            #    print("backward_seq after layer",self.gradwrtoutput.size())
         self.gradwrtinput=gradwrtoutput
 
     def param(self):

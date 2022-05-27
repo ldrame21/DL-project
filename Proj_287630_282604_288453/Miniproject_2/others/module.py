@@ -144,7 +144,7 @@ class NearestUpsampling(Module):
     def forward(self, input):
         """
         """
-        self.input=input
+        self.input=input.to(self.device)
         self.input_shape=input.size()
         #print(" NearestUpsampling input",self.input.size())
         # autre methode: ? neighbors=torch.nn.functional.unfold(self.input, kernel_size=1, stride=self.stride, dilation=self.dilation)
@@ -156,10 +156,13 @@ class NearestUpsampling(Module):
         """
         """
         self.gradwrtoutput = gradwrtoutput
+        #print(" gradwrtoutput UPsmapling ",self.gradwrtoutput.size())
         unfolded_gradwrtoutput=unfold(self.gradwrtoutput, self.scale_factor, stride=self.scale_factor)#.to(self.device)
         #sum gradient of the loss wrt to output along kernels
-        summed_gradient=unfolded_gradwrtoutput.reshape(self.gradwrtoutput.size(0),self.in_channels,self.scale_factor**2,-1)#.sum(2)
+        #print(" unflolded ",unfolded_gradwrtoutput.size())
+        summed_gradient=unfolded_gradwrtoutput.reshape(self.gradwrtoutput.size(0),self.in_channels,self.scale_factor**2,-1).sum(2)
         #reshape the vector as the input vector of the upsampling
+        #print(" unflolded ",summed_gradient.size())
         self.gradwrtinput=summed_gradient.view(self.gradwrtoutput.size(0),self.input_shape[1],self.input_shape[2],self.input_shape[2])
         return self.gradwrtinput
 
