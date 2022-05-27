@@ -1,5 +1,6 @@
-from torch import FloatTensor, rand, random, zeros, bool
+from torch import FloatTensor, rand, zeros
 from torch.nn.functional import fold, unfold
+import math
 
 ######## Module class type ########
 
@@ -186,9 +187,6 @@ class Conv2d(object):
         """
         self.device =device
         self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
-        #random initialisation of weights
-        self.weight = rand(channels_out,channels_in,kernel_size,kernel_size).to(self.device)
-        self.bias = rand(channels_out).to(self.device)
 
         self.kernel_size = kernel_size
         self.out_channels = channels_out
@@ -196,6 +194,15 @@ class Conv2d(object):
         self.stride = stride
         self.dilation = dilation
         self.padding = padding
+
+        #random initialisation of weights
+        self.weight = rand(channels_out,channels_in,kernel_size,kernel_size).to(self.device)
+        self.bias = rand(channels_out).to(self.device)
+
+        # PyTorch like initialization of weights
+        k=self.in_channels/(self.in_channels*self.kernel_size**2)
+        self.weight = self.weight.uniform_(-math.sqrt(k),-math.sqrt(k))
+        self.bias = self.bias.uniform_(-math.sqrt(k),-math.sqrt(k))
 
         self.weight_grad = FloatTensor(channels_out,channels_in,kernel_size,kernel_size).zero_().to(self.device)
         self.bias_grad = FloatTensor(channels_out).zero_().to(self.device)
