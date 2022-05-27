@@ -10,7 +10,7 @@ from collections import OrderedDict
 verbose=1
 
 ######## Loss ########
-class MSE:
+class MSE():
     def __init__(self):
         pass 
 
@@ -98,7 +98,7 @@ class Sequential(Module):
         for layer in reversed(list(self.layers)):
             #gradwrtoutput = layer.backward(gradwrtoutput)
             for idx in range(gradwrtoutput.size(0)):
-                print(gradwrtoutput[idx:idx+1,:,:,:].size())
+                print("backward_seq",gradwrtoutput[idx:idx+1,:,:,:].size())
                 gradwrtoutput = layer.backward(gradwrtoutput[idx:idx+1,:,:,:])
         self.gradwrtinput=gradwrtoutput
 
@@ -110,7 +110,7 @@ class Sequential(Module):
 ######## Model #########
 
 class Model():
-    def __init__(self, mini_batch_size=1, lr=0.001):
+    def __init__(self, mini_batch_size=10, lr=0.001):
         """
         Instantiate model + optimizer + loss function 
         """
@@ -211,6 +211,7 @@ class Model():
                 # Backward-pas
                 idx=self.optimizer.pick_target()
                 grad_wrt_output = self.criterion.compute_backward_pass_gradient(output[idx:idx+1,:,:,:], train_target.narrow(0, b, self.mini_batch_size)[idx:idx+1,:,:,:])
+                print("grad_wrt_output model ", grad_wrt_output.size())
                 self.net.backward(grad_wrt_output)
                 # Gradient step
                 self.optimizer.gradient_step()
