@@ -43,10 +43,13 @@ class SGD():
         self.layers=layers
         random.seed(0)
 
-    def gradient_step(self):
+    def pick_target(self):
         # generate random int for the stochastic choice of image in the mini_batch_size
         idx = random.randint(0, self.batch_size-1)
-        picker=self.layers[0].input[idx,:,:,:]
+        print("IDX, ", idx)
+        return idx
+
+    def gradient_step(self):
         for layer_in_net in self.layers:
             print(layer_in_net)
             layer_in_net.update_gradient_step(self.learning_rate)
@@ -60,7 +63,7 @@ class SGD():
 ######## Container ########
 
 class Sequential(Module):
-    def __init__(self, *layers): #loss
+    def __init__(self, *layers): 
         """
         :param loss: class instance with methods compute_loss and compute_grad (in our case always MSE())
         :param input_size: size of input samples of the network
@@ -205,8 +208,9 @@ class Model():
 
                 self.net.zero_grad()
 
-                # Backward-pass
-                grad_wrt_output = self.criterion.compute_backward_pass_gradient(output, train_target.narrow(0, b, self.mini_batch_size))
+                # Backward-pas
+                idx=self.optimizer.pick_target()
+                grad_wrt_output = self.criterion.compute_backward_pass_gradient(output[idx:idx+1,:,:,:], train_target.narrow(0, b, self.mini_batch_size)[idx:idx+1,:,:,:])
                 self.net.backward(grad_wrt_output)
                 # Gradient step
                 self.optimizer.gradient_step()
