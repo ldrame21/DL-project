@@ -11,8 +11,8 @@ verbose=1
 
 ######## Loss ########
 class MSE():
-    def __init__(self):
-        pass 
+    def __init__(self, device='cpu'):
+        self.device=device 
 
     @staticmethod
     def compute_loss(predicted, target):
@@ -21,7 +21,7 @@ class MSE():
         :param target: tensor of shape (...) consisting of the targets
         :return: loss
         """
-        return ((predicted-target)**2).mean()
+        return ((predicted-target)**2).mean().to(self.device)
 
     @staticmethod
     def compute_backward_pass_gradient(predicted, target):
@@ -101,16 +101,15 @@ class Model():
         """
         Instantiate model + optimizer + loss function 
         """
-        super().__init__()
-    
+        self.device = device('cuda' if cuda.is_available() else 'cpu')
         self.net = Sequential(
-            Conv2d(3, 3, 3, stride=2, padding=1), # pas de padding//padding 1
+            Conv2d(3, 3, 3, stride=2, padding=1, device=self.device), # pas de padding//padding 1
             ReLU(),
-            Conv2d(3, 3, 3, stride=2, padding=1), #pas de padding//padding 1
+            Conv2d(3, 3, 3, stride=2, padding=1, device=self.device), #pas de padding//padding 1
             ReLU(),
-            Upsampling(3, 3, 3, scale_factor=2, padding=1), #padding 2 //pas de padding 
+            Upsampling(3, 3, 3, scale_factor=2, padding=1, device=self.device), #padding 2 //pas de padding 
             ReLU(),
-            Upsampling(3, 3, 3, scale_factor=2, padding=1), #padding 1// pas de padding 
+            Upsampling(3, 3, 3, scale_factor=2, padding=1, device=self.device), #padding 1// pas de padding 
             Sigmoid()
         )
         self.criterion = MSE()
@@ -185,14 +184,16 @@ class Model():
 
         for e in range(nb_epochs):
             acc_loss = 0
-
+            #Moving training input to device
+            train_input = train_input.to(self.device)
+            train_target = train_target.to(self.device)
             # SGD - shuffle datasamples for stochastic gradient descent
             random.shuffle(train_input)
 
             print(train_input)
             for b in range(0, train_input.size(0), self.mini_batch_size):
                 
-                output = self.forward(train_input.narrow(0, b, self.mini_batch_size))
+                output = self.forward(train_input.narrow(0, b, self.mini_batch_size)).to(self.device)
                 self.loss = self.criterion.compute_loss(output, train_target.narrow(0, b, self.mini_batch_size))
                 acc_loss = acc_loss + self.loss
 
