@@ -35,29 +35,13 @@ class MSE():
 ######## Optimizer: Stochastic Gradient Descent ########
 class SGD():
     def __init__(self, *layers, lr=0.001, mini_batch_size=1, criterion=MSE()):#net
-        # paramètre nb_epoch ?
-        # tolerance?
         self.learning_rate = lr
         self.batch_size = mini_batch_size
         self.criterion = criterion
-        #self.net=net
         self.layers=layers
         random.seed(0)
 
-    def pick_target(self):
-        # generate random int for the stochastic choice of image in the mini_batch_size
-        idx = random.randint(0, self.batch_size-1)
-        #print("IDX, ", idx)
-        return idx
-
     def gradient_step(self):
-        #for i,layer_unit in enumerate(self.net.layers):
-        #    # Update weights
-        #    self.net.layers[i].weight -= self.learning_rate * layer_unit.weight_grad
-    
-            # Update bias
-        #    self.net.layers[i].bias -=  self.learning_rate *layer_unit.bias_grad
-            
         for layer_in_net in self.layers:
             #print(layer_in_net)
             layer_in_net.update_gradient_step(self.learning_rate)
@@ -202,18 +186,20 @@ class Model():
         for e in range(nb_epochs):
             acc_loss = 0
 
+            # SGD - shuffle datasamples for stochastic gradient descent
+            random.shuffle(train_input)
+
+            print(train_input)
             for b in range(0, train_input.size(0), self.mini_batch_size):
+                
                 output = self.forward(train_input.narrow(0, b, self.mini_batch_size))
-                print("output size", output.size())
-                print("target size", train_target.narrow(0, b, self.mini_batch_size).size())
                 self.loss = self.criterion.compute_loss(output, train_target.narrow(0, b, self.mini_batch_size))
                 acc_loss = acc_loss + self.loss
 
                 self.net.zero_grad()
 
                 # Backward-pas
-                idx=self.optimizer.pick_target()
-                grad_wrt_output = self.criterion.compute_backward_pass_gradient(output[idx:idx+1,:,:,:], train_target.narrow(0, b, self.mini_batch_size)[idx:idx+1,:,:,:])
+                grad_wrt_output = self.criterion.compute_backward_pass_gradient(output, train_target.narrow(0, b, self.mini_batch_size))
                 
                 #print("grad_wrt_output model ", grad_wrt_output.size())
                 self.net.backward(grad_wrt_output)
