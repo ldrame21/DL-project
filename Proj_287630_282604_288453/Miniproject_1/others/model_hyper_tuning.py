@@ -17,11 +17,15 @@ class Model(torch.nn.Module):
             nn.ReLU(),
             nn.Conv2d(48, 48, kernel_size = 3, padding=3//2), 
             nn.ReLU(),
+            nn.Conv2d(48, 48, kernel_size = 3, padding=3//2), 
+            nn.ReLU(),
             nn.MaxPool2d(2)
         )
 
         self.decoder = nn.Sequential(
             nn.UpsamplingNearest2d(32),
+            nn.ReLU(),
+            nn.ConvTranspose2d(48, 48, kernel_size = 3, padding=3//2),
             nn.ReLU(),
             nn.ConvTranspose2d(48, 48, kernel_size = 3, padding=3//2),
             nn.ReLU(),
