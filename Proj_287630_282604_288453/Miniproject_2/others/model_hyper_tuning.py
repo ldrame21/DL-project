@@ -2,7 +2,8 @@ from torch import FloatTensor, cuda, device, save, load, cat, no_grad, save
 import Proj_287630_282604_288453.Miniproject_2.__init__
 import matplotlib.pyplot as plt
 from Proj_287630_282604_288453.Miniproject_2.others.module import Module,ReLU,Sigmoid,Conv2d,Upsampling
-
+import torch
+from torch.utils.data import random_split
 import random
 from collections import OrderedDict
 
@@ -65,6 +66,7 @@ class Sequential(Module):
         :param loss: class instance with methods compute_loss and compute_grad (in our case always MSE())
         :param input_size: size of input samples of the network
         """
+
         self.layers = layers # empty until the layers of the network are given
 
     def __call__(self,*input):
@@ -109,18 +111,21 @@ class Model():
         """
         Instantiate model + optimizer + loss function 
         """
+
         super().__init__()
-    
+
+        self.device = device('cuda' if torch.cuda.is_available() else 'cpu')
         self.net = Sequential(
-            Conv2d(3, 3, 3, stride=2), #padding 1
+            Conv2d(3, 3, 3, stride=2, device=self.device), #padding 1
             ReLU(),
-            Conv2d(3, 3, 3, stride=2), #padding 1 
+            Conv2d(3, 3, 3, stride=2, device=self.device), #padding 1 
             ReLU(),
-            Upsampling(3, 3, 3, scale_factor=2, padding=2), #pas de padding
+            Upsampling(3, 3, 3, scale_factor=2, padding=2, device=self.device), #pas de padding
             ReLU(),
-            Upsampling(3, 3, 3, scale_factor=2, padding=1), #pas de padding
+            Upsampling(3, 3, 3, scale_factor=2, padding=1,device=self.device), #pas de padding
             Sigmoid()
         )
+        
         self.criterion = MSE()
         self.optimizer = SGD(lr, mini_batch_size, MSE(), self.net.layers[0])
         self.mini_batch_size = mini_batch_size
@@ -179,11 +184,12 @@ class Model():
         :param train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         :param train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
         """
-    
-        #move data to the device (CPU or GPU)
-        #device = device('cuda' if cuda.is_available() else 'cpu')
-        #train_input, train_target = train_input.to(device), train_target.to(device)
-
+        print('patience 3')
+        #move the model, criterion & data to the device (CPU or GPU)
+        device_ = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.to(device_)
+        self.criterion.to(device_)
+        
         #creating the training and validation dataset as well as trainloaders
         #Subsets
         training_dataset = torch.utils.data.TensorDataset(train_input, train_target)
@@ -191,10 +197,10 @@ class Model():
         train_subset, val_subset = random_split(training_dataset, lengths=[length, len(training_dataset) - length])
         #Loaders
         train_loader = torch.utils.data.DataLoader(train_subset,
-                                                batch_size=mini_batch_size,
+                                                batch_size=self.mini_batch_size,
                                                 shuffle=True)
         val_loader = torch.utils.data.DataLoader(val_subset,
-                                                batch_size=mini_batch_size,
+                                                batch_size=self.mini_batch_size,
                                                 shuffle=True)                                       
         #training_dataset = torch.utils.data.TensorDataset(train_input, train_target)
         #Batching the data
@@ -211,7 +217,7 @@ class Model():
                 #No need for gradient calculation:
                 with no_grad():
                     val_input, val_target = data
-                    val_input, val_target = val_input.to(device), val_target.to(device)
+                    val_input, val_target = val_input.to(device_), val_target.to(device_)
 
                     output = self.forward(val_input)
                     self.loss = self.criterion(output, val_target)
@@ -238,7 +244,7 @@ class Model():
             train_loss.append(acc_loss_train/len(train_subset))
             val_loss.append(acc_loss_val/len(val_subset))
 
-            if verbose: print(f"Epoch #{e}: lr = {lr}, mini_batch_size = {mini_batch_size} Training loss = {acc_loss_train/len(train_subset)} ----- Validation loss = {acc_loss_val/len(val_subset)} ")
+            if verbose: print(f"Epoch #{e}: lr = {self.lr}, mini_batch_size = {self.mini_batch_size} Training loss = {acc_loss_train/len(train_subset)} ----- Validation loss = {acc_loss_val/len(val_subset)} ")
 
 
         #Saving the model

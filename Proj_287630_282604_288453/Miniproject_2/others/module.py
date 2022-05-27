@@ -124,9 +124,10 @@ class Sigmoid(Module):
 ######## Convolutionnal layers ########
 
 class NearestUpsampling(Module):
-    def __init__(self, channels_in, channels_out, scale_factor=1, input_shape=0):
+    def __init__(self, channels_in, channels_out, scale_factor=1, input_shape=0, device='cpu'):
         """
         """
+        self.device = device
         self.out_channels = channels_in
         self.in_channels = channels_in
         #stride is equivalent to scale_factor
@@ -134,9 +135,9 @@ class NearestUpsampling(Module):
 
         if(input_shape): 
             self.input_shape=input_shape
-            self.gradwrtinput = FloatTensor(input_shape).zero_()
-            self.input = FloatTensor(input_shape).zero_()
-            self.gradwrtoutput = FloatTensor((input_shape[0],input_shape[1],input_shape[2]*self.scale_factor,input_shape[2]*self.scale_factor)).zero_()
+            self.gradwrtinput = FloatTensor(input_shape).zero_().to(self.device)
+            self.input = FloatTensor(input_shape).zero_().to(self.device)
+            self.gradwrtoutput = FloatTensor((input_shape[0],input_shape[1],input_shape[2]*self.scale_factor,input_shape[2]*self.scale_factor)).zero_().to(self.device)
 
     def forward(self, input):
         """
@@ -154,7 +155,7 @@ class NearestUpsampling(Module):
         """
         self.gradwrtoutput = gradwrtoutput
         print("gradwrtoutput ",gradwrtoutput.size())
-        unfolded_gradwrtoutput=unfold(self.gradwrtoutput, self.scale_factor, stride=self.scale_factor)
+        unfolded_gradwrtoutput=unfold(self.gradwrtoutput, self.scale_factor, stride=self.scale_factor)#.to(self.device)
         print("gradwrtoutput unfolded ",unfolded_gradwrtoutput.size())
         #sum gradient of the loss wrt to output along kernels
         summed_gradient=unfolded_gradwrtoutput.reshape(self.gradwrtoutput.size(0),self.in_channels,self.scale_factor**2,-1).sum(2)
@@ -174,18 +175,18 @@ class NearestUpsampling(Module):
         return []
 
 class Conv2d(object):
-    def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, padding=0 ,input_shape=0): 
+    def __init__(self, channels_in, channels_out, kernel_size, stride=1, dilation=1, padding=0 ,input_shape=0, device='cpu'): 
         """
         :param channels_in: integer, size of the layer's input channel dimension (dimension 0)
         :param channels_out: integer, size of the layer's output channel dimension (dimension 0)
         :param kernel_size: integer, size of the kernel along both dimensions 
         :param input_shape: list of int, dimensions size of the input
         """
-
+        self.device =device
         self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
         #random initialisation of weights
-        self.weight = rand(channels_out,channels_in,kernel_size,kernel_size) 
-        self.bias = rand(channels_out)
+        self.weight = rand(channels_out,channels_in,kernel_size,kernel_size).to(self.device)
+        self.bias = rand(channels_out).to(self.device)
 
         self.kernel_size = kernel_size
         self.out_channels = channels_out
@@ -194,9 +195,9 @@ class Conv2d(object):
         self.dilation = dilation
         self.padding = padding
 
-        self.weight_grad = FloatTensor(channels_out,channels_in,kernel_size,kernel_size).zero_()
-        self.bias_grad = FloatTensor(channels_out).zero_()
-        if(not(input_shape)): self.gradwrtinput = FloatTensor(input_shape).zero_()
+        self.weight_grad = FloatTensor(channels_out,channels_in,kernel_size,kernel_size).zero_().to(self.device)
+        self.bias_grad = FloatTensor(channels_out).zero_().to(self.device)
+        if(not(input_shape)): self.gradwrtinput = FloatTensor(input_shape).zero_().to(self.device)
 
 
     def forward (self, input): 
@@ -206,15 +207,15 @@ class Conv2d(object):
         :return: tensor of shape (channels_out, H-kernel_size+1, W-kernel_size+1) containing the convolution of the input tensor 
         with the kernels (nb of kernels defined by channels_out)
         """
-        self.input = input
+        self.input = input.to(self.device)
         #input shape 
         self.input_shape = self.input.size()
 
         #output of convolution as a matrix product
-        self.unfolded = unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation, padding=self.padding)
+        self.unfolded = unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation, padding=self.padding).to(self.device)
 
-        wxb = self.weight.view(self.out_channels,-1) @ self.unfolded + self.bias.view(1,-1,1)
-        self.output = wxb.view(self.input_shape[0],self.out_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1 +2*self.padding), int((self.input_shape[2] - self.kernel_size)/self.stride +1+2*self.padding))
+        wxb = self.weight.view(self.out_channels,-1) @ self.unfolded + self.bias.view(1,-1,1)#.to(self.device)
+        self.output = wxb.view(self.input_shape[0],self.out_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1 +2*self.padding), int((self.input_shape[2] - self.kernel_size)/self.stride +1+2*self.padding))#.to(self.device)
         #print("forward conv2d output ",self.output.size())
         return self.output
 
@@ -224,7 +225,7 @@ class Conv2d(object):
         :param gradwrtoutput: tensor of (...) shape representing the gradient with respect to the output of the layer
         :return: tensor of (...) shape representing the gradient with respect to the input of the layer
         """
-        self.gradwrtoutput = gradwrtoutput
+        self.gradwrtoutput = gradwrtoutput.to(self.device)
 
         gradwrtoutput_flat = self.gradwrtoutput.permute(1, 2, 3, 0).sum(3).reshape(self.out_channels, -1)
 
@@ -278,9 +279,10 @@ class Conv2d(object):
                + [(self.bias, self.bias_grad)]
 
 class Upsampling(Module):
-    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, scale_factor=1, padding=0, input_shape=0):
+    def __init__(self, channels_in, channels_out, kernel_size, dilation=1, scale_factor=1, padding=0, input_shape=0, device='cpu'):
         """
         """
+        self.device = device
         self.out_channels = channels_out
         self.in_channels = channels_in
         #stride is equivalent to scale_factor
@@ -300,9 +302,9 @@ class Upsampling(Module):
         self.hidden_size = (channels_out,channels_in,kernel_size,kernel_size)
         
         if(input_shape): 
-            self.gradwrtinput = FloatTensor(input_shape).zero_()
-            self.input = FloatTensor(input_shape).zero_()
-            self.gradwrtoutput = FloatTensor((input_shape[0],input_shape[1],input_shape[2]*self.scale_factor,input_shape[2]*self.scale_factor)).zero_()
+            self.gradwrtinput = FloatTensor(input_shape).zero_().to(self.device)
+            self.input = FloatTensor(input_shape).zero_().to(self.device)
+            self.gradwrtoutput = FloatTensor((input_shape[0],input_shape[1],input_shape[2]*self.scale_factor,input_shape[2]*self.scale_factor)).zero_().to(self.device)
             self.nearestupsampling=NearestUpsampling(self.in_channels, self.out_channels, self.scale_factor, input_shape=self.input.size())
             self.kernel_size = kernel_size
 
