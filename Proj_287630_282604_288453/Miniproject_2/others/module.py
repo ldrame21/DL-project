@@ -63,6 +63,12 @@ class ReLU(Module):
         """
         pass
 
+    def update_gradient_step(self):
+        """
+        Nothing to do because no parameter. Method added for consistency with other layers
+        """
+        pass
+
     def param(self):
         """
         :return: empty list since the activation layers have no parameters
@@ -201,8 +207,8 @@ class Conv2d(object):
 
         # PyTorch like initialization of weights
         k=self.in_channels/(self.in_channels*self.kernel_size**2)
-        self.weight = self.weight.uniform_(-math.sqrt(k),-math.sqrt(k))
-        self.bias = self.bias.uniform_(-math.sqrt(k),-math.sqrt(k))
+        self.weight = self.weight.uniform_(-math.sqrt(k),math.sqrt(k))
+        self.bias = self.bias.uniform_(-math.sqrt(k),math.sqrt(k))
 
         self.weight_grad = FloatTensor(channels_out,channels_in,kernel_size,kernel_size).zero_().to(self.device)
         self.bias_grad = FloatTensor(channels_out).zero_().to(self.device)
@@ -224,7 +230,7 @@ class Conv2d(object):
         self.unfolded = unfold(self.input, kernel_size=self.kernel_size, stride=self.stride, dilation=self.dilation, padding=self.padding).to(self.device)
 
         wxb = self.weight.view(self.out_channels,-1) @ self.unfolded + self.bias.view(1,-1,1)#.to(self.device)
-        self.output = wxb.view(self.input_shape[0],self.out_channels, int((self.input_shape[2] - self.kernel_size)/self.stride +1 +2*self.padding), int((self.input_shape[2] - self.kernel_size)/self.stride +1+2*self.padding))#.to(self.device)
+        self.output = wxb.view(self.input_shape[0],self.out_channels, int((self.input_shape[2] - self.kernel_size + 2*self.padding)/self.stride +1), int((self.input_shape[2] - self.kernel_size +2*self.padding)/self.stride +1))#.to(self.device)
         return self.output
 
     def backward (self, gradwrtoutput):
@@ -235,22 +241,20 @@ class Conv2d(object):
         """
         self.gradwrtoutput = gradwrtoutput.to(self.device)
 
-        gradwrtoutput_flat = self.gradwrtoutput.permute(1, 2, 3, 0).sum(3).reshape(self.out_channels, -1)
+        gradwrtoutput_reshaped = self.gradwrtoutput.permute(1, 2, 3, 0).reshape(self.weight.size(0), -1)
 
         # weight gradient 
-        dW = gradwrtoutput_flat @ self.unfolded.transpose(1,2).sum(0,keepdim=True)
+        dW = gradwrtoutput_reshaped @ self.unfolded.permute(1,2,0).reshape(1,self.unfolded.size(1),-1).transpose(1,2)
         self.weight_grad =dW.reshape(self.weight.size())
-        #self.weight_grad = self.weight_grad.add(dW.reshape(self.weight.size()))
-
+        
         # bias gradient is the input_gradient. 
         self.bias_grad =  self.gradwrtoutput.sum(3).sum(2).sum(0).reshape(self.out_channels, -1)
-        #self.bias_grad = self.bias_grad.add(self.gradwrtoutput.sum(3).sum(2).sum(0).reshape(self.out_channels, -1))
-  
+
         # derivative of the Loss with respect to input
         W_flat = self.weight.reshape(self.out_channels, -1)
-        dX_col = W_flat.transpose(0,1) @ gradwrtoutput_flat
-        #dX_col = dX_col.reshape(dX_col.size(0),int(dX_col.size(1)/gradwrtoutput.size(0)),-1).permute(2,0,1)
-        dX_col = dX_col.reshape(dX_col.size(0),dX_col.size(1),-1).permute(2,0,1)
+        dX_col = W_flat.transpose(0,1) @ gradwrtoutput_reshaped
+
+        dX_col = dX_col.reshape(dX_col.size(0),int(dX_col.size(1)/self.gradwrtoutput.size(0)),-1).permute(2,0,1)
         self.gradwrtinput = fold(dX_col, output_size=(self.input_shape[2],self.input_shape[3]), kernel_size=self.kernel_size, padding=self.padding, stride=self.stride)
         
         return self.gradwrtinput
@@ -259,10 +263,14 @@ class Conv2d(object):
         """
         Gradient step
         """
+        #print(self.weight)
+        testavant=self.weight
         self.weight = self.weight - lr * self.weight_grad
         self.bias[0] = self.bias_grad[0] - lr * self.bias_grad[0]
         self.bias[1] = self.bias_grad[1] - lr * self.bias_grad[1]
         self.bias[2] = self.bias_grad[2] - lr * self.bias_grad[2]
+        #print(testavant-self.weight)
+        #print(self.weight)
 
     def __call__(self,*input):
         self.forward(input[0])
@@ -272,8 +280,10 @@ class Conv2d(object):
         """
         Reset all parameter gradients to 0
         """
+        #print("avant zero_grad", self.weight_grad)
         self.weight_grad.zero_()
         self.bias_grad.zero_()
+        #print("après zero grad", self.weight_grad)
 
     def param(self):
         """

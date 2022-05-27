@@ -34,30 +34,33 @@ class MSE():
 
 ######## Optimizer: Stochastic Gradient Descent ########
 class SGD():
-    def __init__(self, lr=0.001, mini_batch_size=1, criterion=MSE(), *layers):
+    def __init__(self, *layers, lr=0.001, mini_batch_size=1, criterion=MSE()):#net
         # paramètre nb_epoch ?
         # tolerance?
         self.learning_rate = lr
         self.batch_size = mini_batch_size
         self.criterion = criterion
+        #self.net=net
         self.layers=layers
         random.seed(0)
 
     def pick_target(self):
         # generate random int for the stochastic choice of image in the mini_batch_size
         idx = random.randint(0, self.batch_size-1)
-        print("IDX, ", idx)
+        #print("IDX, ", idx)
         return idx
 
     def gradient_step(self):
+        #for i,layer_unit in enumerate(self.net.layers):
+        #    # Update weights
+        #    self.net.layers[i].weight -= self.learning_rate * layer_unit.weight_grad
+    
+            # Update bias
+        #    self.net.layers[i].bias -=  self.learning_rate *layer_unit.bias_grad
+            
         for layer_in_net in self.layers:
-            print(layer_in_net)
+            #print(layer_in_net)
             layer_in_net.update_gradient_step(self.learning_rate)
-
-    def param(self):
-        """
-        """
-        return []
 
 
 ######## Container ########
@@ -90,20 +93,16 @@ class Sequential(Module):
         """
         """
         for layer in self.layers:
+            #print("zero grad layer",layer)
             layer.zero_grad()
 
     def backward(self, gradwrtoutput):
         """
         """
         self.gradwrtoutput=gradwrtoutput
-        print("backward_seq",self.gradwrtoutput.size(0))
         for layer in reversed(list(self.layers)):
             gradwrtoutput = layer.backward(gradwrtoutput)
-            #for idx in range(gradwrtoutput.size(0)):
-            #    print("backward_seq before layer",gradwrtoutput[idx:idx+1,:,:,:].size())
-            #    print(layer)
-            #    gradwrtoutput = layer.backward(gradwrtoutput[idx:idx+1,:,:,:])
-            #    print("backward_seq after layer",self.gradwrtoutput.size())
+        
         self.gradwrtinput=gradwrtoutput
 
     def param(self):
@@ -121,17 +120,17 @@ class Model():
         super().__init__()
     
         self.net = Sequential(
-            Conv2d(3, 3, 3, stride=2), #padding 1
+            Conv2d(3, 3, 3, stride=2, padding=1), # pas de padding//padding 1
             ReLU(),
-            Conv2d(3, 3, 3, stride=2), #padding 1 
+            Conv2d(3, 3, 3, stride=2, padding=1), #pas de padding//padding 1
             ReLU(),
-            Upsampling(3, 3, 3, scale_factor=2, padding=2), #pas de padding
+            Upsampling(3, 3, 3, scale_factor=2, padding=1), #padding 2 //pas de padding 
             ReLU(),
-            Upsampling(3, 3, 3, scale_factor=2, padding=1), #pas de padding
+            Upsampling(3, 3, 3, scale_factor=2, padding=1), #padding 1// pas de padding 
             Sigmoid()
         )
         self.criterion = MSE()
-        self.optimizer = SGD(lr, mini_batch_size, MSE(), self.net.layers[0])
+        self.optimizer = SGD(self.net.layers[0], lr=lr, mini_batch_size=mini_batch_size, criterion=MSE())#self.net
         self.mini_batch_size = mini_batch_size
         self.lr=lr
 
@@ -215,8 +214,14 @@ class Model():
                 # Backward-pas
                 idx=self.optimizer.pick_target()
                 grad_wrt_output = self.criterion.compute_backward_pass_gradient(output[idx:idx+1,:,:,:], train_target.narrow(0, b, self.mini_batch_size)[idx:idx+1,:,:,:])
-                print("grad_wrt_output model ", grad_wrt_output.size())
+                
+                #print("grad_wrt_output model ", grad_wrt_output.size())
                 self.net.backward(grad_wrt_output)
+                #print("grad_weights Upsamp2", self.net.layers[-2].conv2d.weight_grad)
+                #print("grad_weights Upsamp1", self.net.layers[-4].conv2d.weight_grad)
+                #print("grad_weights conv2d 2", self.net.layers[2].weight_grad)
+                #print("grad_weights conv2d 1", self.net.layers[0].weight_grad)
+
                 # Gradient step
                 self.optimizer.gradient_step()
             
