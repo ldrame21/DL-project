@@ -47,6 +47,7 @@ class SGD():
         idx = random.randint(0, self.batch_size-1)
         picker=self.layers[0].input[idx,:,:,:]
         for layer_in_net in self.layers:
+            print('self lr SGD', self.learning_rate)
             layer_in_net.update_gradient_step(self.learning_rate)
 
     def param(self):
