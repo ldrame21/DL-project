@@ -1,11 +1,10 @@
 import math
 import torch
 from torch import optim
-from torch import Tensor
 from torch import nn
 import matplotlib.pyplot as plt
-
 import Proj_287630_282604_288453.Miniproject_1.__init__
+
 class Model(torch.nn.Module):
     def __init__(self):
         ## instantiate model + optimizer + loss function + any other stuff you need 
@@ -15,15 +14,11 @@ class Model(torch.nn.Module):
             nn.ReLU(),
             nn.Conv2d(48, 48, kernel_size = 3, padding=3//2), 
             nn.ReLU(),
-            nn.Conv2d(48, 48, kernel_size = 3, padding=3//2), 
-            nn.ReLU(),
             nn.MaxPool2d(2)
         )
 
         self.decoder = nn.Sequential(
             nn.UpsamplingNearest2d(scale_factor=2),
-            nn.ReLU(),
-            nn.ConvTranspose2d(48, 48, kernel_size = 3, padding=3//2),
             nn.ReLU(),
             nn.ConvTranspose2d(48, 48, kernel_size = 3, padding=3//2),
             nn.ReLU(),
@@ -50,7 +45,7 @@ class Model(torch.nn.Module):
         else: 
             self.load_state_dict(torch.load(SAVE_PATH, map_location=torch.device('cpu')))
         
-    def train(self, train_input, train_target, nb_epochs=10, verbose=0,  SAVE_PATH='Proj_287630_282604_288453/Miniproject_1/bestmodel.pth',mini_batch_size=100):
+    def train(self, train_input, train_target, num_epochs=10, verbose=0,  SAVE_PATH=None,mini_batch_size=100):
         #:train_input: tensor of size (N, C, H, W) containing a noisy version of the images.
         #:train_target: tensor of size (N, C, H, W) containing another noisy version of the same images, which only differs from the input by their noise.
 
@@ -60,7 +55,7 @@ class Model(torch.nn.Module):
 
         train_loss = []
 
-        for e in range(nb_epochs):
+        for e in range(num_epochs):
             acc_loss = 0
 
             for b in range(0, train_input.size(0), mini_batch_size):
@@ -70,9 +65,9 @@ class Model(torch.nn.Module):
                 self.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-            #for plotting the loss
-            train_loss.append(acc_loss)
 
+            train_loss.append(acc_loss)
+            #Plotting training loss
             if verbose: print(e, acc_loss)
 
         #Saving the model
@@ -94,7 +89,6 @@ class Model(torch.nn.Module):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         test_input = test_input.to(device)
 
-        losses = []
         model_outputs = []
         for b in range(0, test_input.size(0), mini_batch_size):
             output = self(test_input.narrow(0, b, mini_batch_size))
