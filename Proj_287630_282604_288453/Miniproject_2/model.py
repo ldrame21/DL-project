@@ -179,7 +179,6 @@ class Model():
             # SGD - shuffle datasamples for stochastic gradient descent
             random.shuffle(train_input)
 
-            print(train_input)
             for b in range(0, train_input.size(0), self.mini_batch_size):
                 
                 output = self.forward(train_input.narrow(0, b, self.mini_batch_size)).to(self.device)
