@@ -214,6 +214,7 @@ class Model():
                     val_input, val_target = data
                     val_input, val_target = val_input.to(self.device), val_target.to(self.device)
 
+
                     output = self.forward(val_input).to(self.device)
                     self.loss =  self.criterion.compute_loss(output, val_target)
                     acc_loss_val = acc_loss_val + self.loss.item()
